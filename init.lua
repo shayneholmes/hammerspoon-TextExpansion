@@ -91,6 +91,8 @@ obj.specialKeys = {
 -- Internal variables
 local keyWatcher
 local keyActions -- generated on start() from specialKeys
+local expansions
+local abbreviation
 
 function generateKeyActions(array)
   keyActions = {}
@@ -101,8 +103,48 @@ function generateKeyActions(array)
   end
 end
 
+function resetAbbreviation()
+  abbreviation = ""
+end
+
+function expandAbbreviation(abbreviation)
+  local output = expansions[abbreviation]
+  if type(output) == "function" then
+    local _, o = pcall(output)
+    if not _ then
+      print("~~ expansion for '" .. abbreviation .. "' gave an error of " .. o)
+      o = nil
+    end
+    output = o
+  end
+  if output then
+    keyWatcher:stop()
+    for i = 1, utf8.len(abbreviation), 1 do hs.eventtap.keyStroke({}, "delete", 0) end
+    hs.eventtap.keyStrokes(output)
+    keyWatcher:start()
+  end
+end
+
 function handleEvent(ev)
-  print("Got an event: " .. ev:getCharacters())
+  local keyCode = ev:getKeyCode()
+  local keyAction = keyActions[keyCode] or "other"
+  if ev:getFlags().cmd then
+    keyAction = "reset"
+  end
+  if keyAction == "reset" then
+    resetAbbreviation()
+  elseif keyAction == "delete" then -- delete the last character
+    local lastChar = utf8.offset(abbreviation, -1) or 0
+    abbreviation = abbreviation:sub(1, lastChar-1)
+  elseif keyAction == "complete" then
+    expandAbbreviation(abbreviation)
+    resetAbbreviation()
+  else -- add character to abbreviation
+    local c = ev:getCharacters()
+    if c then abbreviation = abbreviation .. c end
+  end
+
+  return false -- pass the event on to the focused application
 end
 
 --- TextExpansion:start()
@@ -112,6 +154,8 @@ end
 --- You must make any changes to `TextExpansion.expansions` and `TextExpansion.specialKeys` before this method is called; any further changes to them won't take effect until the watcher is started again.
 function obj:start()
   generateKeyActions(self.specialKeys)
+  expansions = self.expansions
+  abbreviation = ""
   keyWatcher = hs.eventtap.new({ hs.eventtap.event.types.keyDown }, handleEvent)
   keyWatcher:start()
 end
