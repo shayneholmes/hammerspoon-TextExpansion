@@ -16,6 +16,7 @@ local obj={}
 obj.__index = obj
 
 -- Dependencies
+local keyMap = require"hs.keycodes".map
 
 -- Metadata
 obj.name = "TextExpansion"
@@ -89,13 +90,24 @@ obj.specialKeys = {
 
 -- Internal variables
 local keyWatcher
+local keyActions -- generated on start() from specialKeys
+
+function generateKeyActions(array)
+  keyActions = {}
+  for action,keyTable in pairs(array) do
+    for _,keyName in pairs(keyTable) do
+      keyActions[keyMap[keyName]] = action
+    end
+  end
+end
 
 --- TextExpansion:start()
 --- Method
 --- Start the keyboard event watcher.
 ---
---- Set up `expansions` and `specialKeys` before this method is called; if those variables are changed, changes won't take effect until the watcher is started again.
+--- You must make any changes to `TextExpansion.expansions` and `TextExpansion.specialKeys` before this method is called; any further changes to them won't take effect until the watcher is started again.
 function obj:start()
+  generateKeyActions(self.specialKeys)
   keyWatcher = hs.eventtap.new({ hs.eventtap.event.types.keyDown }, function(ev)
     print("Got an event: " .. ev:getCharacters())
   end)
