@@ -49,7 +49,6 @@ obj.expansionDefaults = {
   backspace = true, -- remove the abbreviation
   casesensitive = false, -- case of abbreviation must match exactly TODO
   matchcase = true, -- make expansion conform in case to the abbreviation (works only for first caps, all caps) TODO
-  keystrokedelay = 0, -- delay in ms between keystrokes TODO
   omitcompletionkey = false, -- don't send the completion key TODO
   resetrecognizer = false, -- reset the recognizer after each completion TODO
   -- expansion = nil, -- not in default, must be defined
@@ -64,7 +63,6 @@ obj.expansionDefaults = {
 --   omitcompletionkey
 -- Output:
 --   backspace
---   keystrokedelay
 --   resetrecognizer
 
 --- TextExpansion.specialKeys
@@ -178,7 +176,7 @@ function generateKeystrokes(expansion)
   if expansion == nil then
     return
   end
-  output = expansion["expansion"]
+  local output = expansion["expansion"]
   local backspace = expansion["backspace"]
   if output then
     keyWatcher:stop()
