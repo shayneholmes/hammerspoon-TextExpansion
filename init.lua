@@ -84,10 +84,19 @@ obj.specialKeys = {
   },
 }
 
+-- Internal variables
+local keyWatcher
+
 --- TextExpansion:start()
 --- Method
 --- Start the keyboard event watcher.
+---
+--- Set up `expansions` and `specialKeys` before this method is called; if those variables are changed, changes won't take effect until the watcher is started again.
 function obj:start()
+  keyWatcher = hs.eventtap.new({ hs.eventtap.event.types.keyDown }, function(ev)
+    print("Got an event: " .. ev:getCharacters())
+  end)
+  keyWatcher:start()
 end
 
 return obj
