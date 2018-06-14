@@ -89,10 +89,16 @@ obj.specialKeys = {
   },
 }
 
+--- TextExpansion.timeoutSeconds
+--- Variable
+--- Length of time, in seconds, to wait before timeout.
+---
+--- If no new events arrive in that time period, TextExpansion will forget the abbreviation underway.
+obj.timeoutSeconds = 3
+
 -- Internal variables
 local keyWatcher
 local keyActions -- generated on start() from specialKeys
-local expansions
 local abbreviation
 local pendingTimer
 
@@ -105,47 +111,52 @@ function generateKeyActions(array)
   end
 end
 
-function resetAbbreviation()
+function obj:resetAbbreviation()
   abbreviation = ""
 end
 
-function expandAbbreviation(abbreviation)
-  local output = expansions[abbreviation]
-  if type(output) == "function" then
-    local _, o = pcall(output)
+function obj:getExpansion(abbreviation)
+  local expansion = self.expansions[abbreviation]
+  if type(expansion) == "function" then
+    local _, result = pcall(expansion)
     if not _ then
-      print("~~ expansion for '" .. abbreviation .. "' gave an error of " .. o)
-      o = nil
+      print("~~ expansion for '" .. abbreviation .. "' gave an error of " .. result)
+      result = nil
     end
-    output = o
+    expansion = result
   end
-  if output then
+  return expansion
+end
+
+function generateKeystrokes(abbreviation, expansion)
+  if expansion then
     keyWatcher:stop()
     for i = 1, utf8.len(abbreviation), 1 do hs.eventtap.keyStroke({}, "delete", 0) end
-    hs.eventtap.keyStrokes(output)
+    hs.eventtap.keyStrokes(expansion)
     keyWatcher:start()
   end
 end
 
-function resetAbbreviationTimeout()
-  print("timed out")
-  resetAbbreviation()
+function obj:resetAbbreviationTimeout()
+  -- print("timed out")
+  self:resetAbbreviation()
 end
 
-function handleEvent(ev)
+function obj:handleEvent(ev)
   local keyCode = ev:getKeyCode()
   local keyAction = keyActions[keyCode] or "other"
   if ev:getFlags().cmd then
     keyAction = "reset"
   end
   if keyAction == "reset" then
-    resetAbbreviation()
+    self:resetAbbreviation()
   elseif keyAction == "delete" then -- delete the last character
     local lastChar = utf8.offset(abbreviation, -1) or 0
     abbreviation = abbreviation:sub(1, lastChar-1)
   elseif keyAction == "complete" then
-    expandAbbreviation(abbreviation)
-    resetAbbreviation()
+    local expansion = self:getExpansion(abbreviation)
+    generateKeystrokes(abbreviation, expansion)
+    self:resetAbbreviation()
   else -- add character to abbreviation
     local c = ev:getCharacters()
     if c then abbreviation = abbreviation .. c end
@@ -153,7 +164,7 @@ function handleEvent(ev)
   if pendingTimer then
     pendingTimer:stop()
   end
-  pendingTimer = hs.timer.doAfter(6, resetAbbreviationTimeout)
+  pendingTimer = hs.timer.doAfter(self.timeoutSeconds, function() self:resetAbbreviationTimeout() end)
 
   return false -- pass the event on to the focused application
 end
@@ -169,9 +180,8 @@ function obj:start()
     keyWatcher:stop()
   end
   generateKeyActions(self.specialKeys)
-  expansions = self.expansions
-  abbreviation = ""
-  keyWatcher = hs.eventtap.new({ hs.eventtap.event.types.keyDown }, handleEvent)
+  self:resetAbbreviation()
+  keyWatcher = hs.eventtap.new({ hs.eventtap.event.types.keyDown }, function(ev) self:handleEvent(ev) end)
   keyWatcher:start()
 end
 
