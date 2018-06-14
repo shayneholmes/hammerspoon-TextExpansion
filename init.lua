@@ -42,10 +42,7 @@ obj.license = "MIT - https://opensource.org/licenses/MIT"
 ---     ["name"] = "my name is foo",
 --- }
 --- ```
-obj.expansions = {
-  ["date"] = function() return os.date("%B %d, %Y") end,
-  ["name"] = "my name is foo",
-}
+obj.expansions = {}
 
 --- TextExpansion.specialKeys
 --- Variable
