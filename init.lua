@@ -164,6 +164,10 @@ end
 ---
 --- You must make any changes to `TextExpansion.expansions` and `TextExpansion.specialKeys` before this method is called; any further changes to them won't take effect until the watcher is started again.
 function obj:start()
+  if keyWatcher ~= nil then
+    print("Warning: watcher is already running! Restarting...")
+    keyWatcher:stop()
+  end
   generateKeyActions(self.specialKeys)
   expansions = self.expansions
   abbreviation = ""
