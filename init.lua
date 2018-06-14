@@ -195,6 +195,7 @@ function obj:handleEvent(ev)
     pendingTimer:stop()
   end
   pendingTimer = hs.timer.doAfter(self.timeoutSeconds, function() self:resetAbbreviationTimeout() end)
+  -- print("Current abbreviation: " .. abbreviation)
 
   return false -- pass the event on to the focused application
 end
