@@ -93,6 +93,7 @@ local keyWatcher
 local keyActions -- generated on start() from specialKeys
 local expansions
 local abbreviation
+local pendingTimer
 
 function generateKeyActions(array)
   keyActions = {}
@@ -125,6 +126,11 @@ function expandAbbreviation(abbreviation)
   end
 end
 
+function resetAbbreviationTimeout()
+  print("timed out")
+  resetAbbreviation()
+end
+
 function handleEvent(ev)
   local keyCode = ev:getKeyCode()
   local keyAction = keyActions[keyCode] or "other"
@@ -143,6 +149,10 @@ function handleEvent(ev)
     local c = ev:getCharacters()
     if c then abbreviation = abbreviation .. c end
   end
+  if pendingTimer then
+    pendingTimer:stop()
+  end
+  pendingTimer = hs.timer.doAfter(6, resetAbbreviationTimeout)
 
   return false -- pass the event on to the focused application
 end
