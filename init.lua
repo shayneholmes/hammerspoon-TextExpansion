@@ -44,6 +44,8 @@ obj.license = "MIT - https://opensource.org/licenses/MIT"
 --- ```
 obj.expansions = {}
 
+obj.expansionDefaults = {}
+
 --- TextExpansion.specialKeys
 --- Variable
 --- Table containing information about special keys. It contains two tables within it:
@@ -112,24 +114,54 @@ function obj:resetAbbreviation()
   abbreviation = ""
 end
 
+function merge_tables(default, override)
+  local combined = {}
+  for k,v in pairs(default) do combined[k] = v end
+  for k,v in pairs(override) do combined[k] = v end
+  return combined
+end
+
 function obj:getExpansion(abbreviation)
   local expansion = self.expansions[abbreviation]
-  if type(expansion) == "function" then
-    local _, result = pcall(expansion)
+  if expansion == nil then
+    return nil
+  end
+  if type(expansion) ~= "table" then
+    expansion = {["expansion"] = expansion}
+  end
+  expansion["abbreviation"] = abbreviation
+  return merge_tables(self.expansionDefaults, expansion)
+end
+
+function obj:formatOutput(output)
+  if type(output) == "function" then
+    local _, result = pcall(output)
     if not _ then
       print("~~ expansion for '" .. abbreviation .. "' gave an error of " .. result)
       result = nil
     end
-    expansion = result
+    output = result
   end
-  return expansion
+  return output
 end
 
-function generateKeystrokes(abbreviation, expansion)
-  if expansion then
+function obj:formatExpansion(expansion)
+  if expansion == nil then
+    return
+  end
+  expansion["expansion"] = self:formatOutput(expansion["expansion"])
+  return expansion;
+end
+
+function generateKeystrokes(expansion)
+  if expansion == nil then
+    return
+  end
+  output = expansion["expansion"]
+  if output then
     keyWatcher:stop()
-    for i = 1, utf8.len(abbreviation), 1 do hs.eventtap.keyStroke({}, "delete", 0) end
-    hs.eventtap.keyStrokes(expansion)
+    for i = 1, utf8.len(expansion["abbreviation"]), 1 do hs.eventtap.keyStroke({}, "delete", 0) end
+    hs.eventtap.keyStrokes(output)
     keyWatcher:start()
   end
 end
@@ -152,7 +184,8 @@ function obj:handleEvent(ev)
     abbreviation = abbreviation:sub(1, lastChar-1)
   elseif keyAction == "complete" then
     local expansion = self:getExpansion(abbreviation)
-    generateKeystrokes(abbreviation, expansion)
+    local expansion = self:formatExpansion(expansion)
+    generateKeystrokes(expansion)
     self:resetAbbreviation()
   else -- add character to abbreviation
     local c = ev:getCharacters()
