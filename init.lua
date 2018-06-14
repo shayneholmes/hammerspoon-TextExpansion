@@ -69,6 +69,7 @@ obj.specialKeys = {
     "space",
     "padenter",
     "tab",
+    ".",
   },
   reset = {
     "escape",
