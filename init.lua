@@ -46,7 +46,7 @@ obj.expansions = {}
 
 obj.expansionDefaults = {
   internal = false, -- trigger even inside another word TODO
-  backspace = true, -- remove the abbreviation TODO
+  backspace = true, -- remove the abbreviation
   casesensitive = false, -- case of abbreviation must match exactly TODO
   matchcase = true, -- make expansion conform in case to the abbreviation (works only for first caps, all caps) TODO
   keystrokedelay = 0, -- delay in ms between keystrokes TODO
@@ -179,9 +179,12 @@ function generateKeystrokes(expansion)
     return
   end
   output = expansion["expansion"]
+  local backspace = expansion["backspace"]
   if output then
     keyWatcher:stop()
-    for i = 1, utf8.len(expansion["abbreviation"]), 1 do hs.eventtap.keyStroke({}, "delete", 0) end
+    if backspace then
+      for i = 1, utf8.len(expansion["abbreviation"]), 1 do hs.eventtap.keyStroke({}, "delete", 0) end
+    end
     hs.eventtap.keyStrokes(output)
     keyWatcher:start()
   end
