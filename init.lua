@@ -101,6 +101,10 @@ function generateKeyActions(array)
   end
 end
 
+function handleEvent(ev)
+  print("Got an event: " .. ev:getCharacters())
+end
+
 --- TextExpansion:start()
 --- Method
 --- Start the keyboard event watcher.
@@ -108,9 +112,7 @@ end
 --- You must make any changes to `TextExpansion.expansions` and `TextExpansion.specialKeys` before this method is called; any further changes to them won't take effect until the watcher is started again.
 function obj:start()
   generateKeyActions(self.specialKeys)
-  keyWatcher = hs.eventtap.new({ hs.eventtap.event.types.keyDown }, function(ev)
-    print("Got an event: " .. ev:getCharacters())
-  end)
+  keyWatcher = hs.eventtap.new({ hs.eventtap.event.types.keyDown }, handleEvent)
   keyWatcher:start()
 end
 
