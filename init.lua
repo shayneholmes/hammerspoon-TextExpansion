@@ -238,9 +238,6 @@ local function formatOutput(output)
 end
 
 local function formatExpansion(expansion)
-  if expansion == nil then
-    return
-  end
   expansion.expansion = formatOutput(expansion.expansion)
   return expansion;
 end
@@ -255,9 +252,6 @@ local function debugTable(table)
 end
 
 local function generateKeystrokes(expansion)
-  if expansion == nil then
-    return
-  end
   local output = expansion.expansion
   local backspace = expansion.backspace
   if output then
