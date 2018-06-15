@@ -15,6 +15,15 @@
 local obj={}
 obj.__index = obj
 
+-- Internal function used to find our location, so we know where to load files from
+local function script_path()
+  local str = debug.getinfo(2, "S").source:sub(2)
+  return str:match("(.*/)")
+end
+obj.spoonPath = script_path()
+
+buffer = dofile(obj.spoonPath.."/circularbuffer.lua")
+
 -- Dependencies
 local eventtap = hs.eventtap
 local keyMap = hs.keycodes.map
@@ -122,6 +131,8 @@ obj.specialKeys = {
 --- If no new events arrive in that time period, TextExpansion will forget the abbreviation underway.
 obj.timeoutSeconds = 3
 
+local maxAbbreviationLength = 40
+
 -- Internal variables
 local debug
 local keyWatcher
@@ -157,7 +168,7 @@ local function generateExpansions(self)
 end
 
 local function resetAbbreviation()
-  abbreviation = ""
+  buffer:clear()
 end
 
 local function getExpansion(abbreviation)
@@ -173,7 +184,7 @@ local function formatOutput(output)
   if type(output) == "function" then
     local _, result = pcall(output)
     if not _ then
-      print("~~ expansion for '" .. abbreviation .. "' gave an error of " .. result)
+      print("~~ expansion for '" .. buffer.get() .. "' gave an error of " .. result)
       result = nil
     end
     output = result
@@ -229,10 +240,9 @@ local function handleEvent(self, ev)
   if keyAction == "reset" then
     resetAbbreviation()
   elseif keyAction == "delete" then -- delete the last character
-    local lastChar = utf8.offset(abbreviation, -1) or 0
-    abbreviation = abbreviation:sub(1, lastChar-1)
+    buffer:pop()
   elseif keyAction == "complete" then
-    local expansion = getExpansion(abbreviation)
+    local expansion = getExpansion(buffer:get())
     local expansion = formatExpansion(expansion)
     generateKeystrokes(expansion)
     debugTable(expansion)
@@ -241,14 +251,18 @@ local function handleEvent(self, ev)
     end
     resetAbbreviation()
   else -- add character to abbreviation
-    local c = ev:getCharacters()
-    if c then abbreviation = abbreviation .. c end
+    local s = ev:getCharacters()
+    if s then
+     for p, c in utf8.codes(s) do
+       buffer:push(c)
+     end
+   end
   end
   if pendingTimer then
     pendingTimer:stop()
   end
   pendingTimer = doAfter(self.timeoutSeconds, function() resetAbbreviationTimeout() end)
-  if debug then print("Current abbreviation: " .. abbreviation) end
+  if debug then print("Current abbreviation: " .. buffer:get()) end
 
   return eatAction
 end
@@ -266,6 +280,7 @@ function obj:start()
   if debug then print("Starting keyboard event watcher.") end
   generateKeyActions(self)
   generateExpansions(self)
+  buffer:init(maxAbbreviationLength)
   resetAbbreviation()
   keyWatcher = eventtap.new({ eventtap.event.types.keyDown }, function(ev) return handleEvent(self, ev) end)
   keyWatcher:start()
