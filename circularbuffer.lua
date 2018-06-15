@@ -55,7 +55,7 @@ function obj:get()
   return utf8.char(table.unpack(slice))
 end
 
-function obj:endswith(str)
+function obj:endsWith(str)
   local len = utf8.len(str)
   if len > count then
     return false
@@ -66,6 +66,7 @@ function obj:endswith(str)
     if array[cur] ~= c then
       return false
     end
+    cur = inc(cur)
   end
   return true
 end

@@ -140,6 +140,7 @@ local keyActions -- generated on start() from specialKeys
 local expansions -- generated on start()
 local abbreviation
 local pendingTimer
+local timeoutSeconds
 
 local function merge_tables(default, override)
   local combined = {}
@@ -172,19 +173,22 @@ local function resetAbbreviation()
 end
 
 local function getExpansion(abbreviation)
-  local expansion = expansions[abbreviation]
-  if expansion == nil then
-    return nil
+  for abbr, expansion in pairs(expansions) do
+    local isMatch = buffer:endsWith(abbr)
+    if debug then print(("%s in buffer? %s"):format(abbr, isMatch)) end
+    if isMatch then
+      expansion.abbreviation = abbreviation:sub(-#abbr)
+      return expansion
+    end
   end
-  expansion.abbreviation = abbreviation
-  return expansion
+  return nil
 end
 
 local function formatOutput(output)
   if type(output) == "function" then
     local _, result = pcall(output)
     if not _ then
-      print("~~ expansion for '" .. buffer.get() .. "' gave an error of " .. result)
+      print("~~ expansion for '" .. buffer:get() .. "' gave an error of " .. result)
       result = nil
     end
     output = result
@@ -230,7 +234,14 @@ local function resetAbbreviationTimeout()
   resetAbbreviation()
 end
 
+local function restartInactivityTimer()
+  if pendingTimer then pendingTimer:stop() end
+  pendingTimer = doAfter(timeoutSeconds, function() resetAbbreviationTimeout() end)
+end
+
 local function handleEvent(self, ev)
+  restartInactivityTimer()
+
   local keyCode = ev:getKeyCode()
   local keyAction = keyActions[keyCode] or "other"
   local eatAction = false -- pass the event on to the focused application
@@ -241,26 +252,24 @@ local function handleEvent(self, ev)
     resetAbbreviation()
   elseif keyAction == "delete" then -- delete the last character
     buffer:pop()
-  elseif keyAction == "complete" then
-    local expansion = getExpansion(buffer:get())
-    local expansion = formatExpansion(expansion)
-    generateKeystrokes(expansion)
-    debugTable(expansion)
-    if expansion and not expansion.sendcompletionkey then
-      eatAction = true
+  else
+    if keyAction == "complete" then
+      local expansion = getExpansion(buffer:get())
+      local expansion = formatExpansion(expansion)
+      generateKeystrokes(expansion)
+      debugTable(expansion)
+      if expansion and not expansion.sendcompletionkey then
+        eatAction = true
+      end
+      resetAbbreviation()
     end
-    resetAbbreviation()
-  end
-  local s = ev:getCharacters()
-  if s then -- add character to abbreviation
-    for p, c in utf8.codes(s) do
-      buffer:push(c)
+    local s = ev:getCharacters()
+    if s then -- add character to abbreviation
+      for p, c in utf8.codes(s) do
+        buffer:push(c)
+      end
     end
   end
-  if pendingTimer then
-    pendingTimer:stop()
-  end
-  pendingTimer = doAfter(self.timeoutSeconds, function() resetAbbreviationTimeout() end)
   if debug then print("Current abbreviation: " .. buffer:get()) end
 
   return eatAction
@@ -279,6 +288,7 @@ function obj:start()
   if debug then print("Starting keyboard event watcher.") end
   generateKeyActions(self)
   generateExpansions(self)
+  timeoutSeconds = self.timeoutSeconds
   buffer:init(maxAbbreviationLength)
   resetAbbreviation()
   keyWatcher = eventtap.new({ eventtap.event.types.keyDown }, function(ev) return handleEvent(self, ev) end)
