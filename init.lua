@@ -109,7 +109,14 @@ local expansions -- generated on start()
 local abbreviation
 local pendingTimer
 
-function generateKeyActions(self)
+local function merge_tables(default, override)
+  local combined = {}
+  for k,v in pairs(default) do combined[k] = v end
+  for k,v in pairs(override) do combined[k] = v end
+  return combined
+end
+
+local function generateKeyActions(self)
   keyActions = {}
   for action,keyTable in pairs(self.specialKeys) do
     for _,keyName in pairs(keyTable) do
@@ -118,7 +125,7 @@ function generateKeyActions(self)
   end
 end
 
-function generateExpansions(self)
+local function generateExpansions(self)
   expansions = {}
   for k,v in pairs(self.expansions) do
     if type(v) ~= "table" then
@@ -128,18 +135,11 @@ function generateExpansions(self)
   end
 end
 
-function resetAbbreviation()
+local function resetAbbreviation()
   abbreviation = ""
 end
 
-function merge_tables(default, override)
-  local combined = {}
-  for k,v in pairs(default) do combined[k] = v end
-  for k,v in pairs(override) do combined[k] = v end
-  return combined
-end
-
-function getExpansion(abbreviation)
+local function getExpansion(abbreviation)
   local expansion = expansions[abbreviation]
   if expansion == nil then
     return nil
@@ -148,7 +148,7 @@ function getExpansion(abbreviation)
   return expansion
 end
 
-function formatOutput(output)
+local function formatOutput(output)
   if type(output) == "function" then
     local _, result = pcall(output)
     if not _ then
@@ -160,7 +160,7 @@ function formatOutput(output)
   return output
 end
 
-function formatExpansion(expansion)
+local function formatExpansion(expansion)
   if expansion == nil then
     return
   end
@@ -168,7 +168,7 @@ function formatExpansion(expansion)
   return expansion;
 end
 
-function debugTable(table)
+local function debugTable(table)
   if not debug then
     return
   end
@@ -177,7 +177,7 @@ function debugTable(table)
   end
 end
 
-function generateKeystrokes(expansion)
+local function generateKeystrokes(expansion)
   if expansion == nil then
     return
   end
@@ -193,12 +193,12 @@ function generateKeystrokes(expansion)
   end
 end
 
-function resetAbbreviationTimeout()
+local function resetAbbreviationTimeout()
   if debug then print("timed out") end
   resetAbbreviation()
 end
 
-function handleEvent(self, ev)
+local function handleEvent(self, ev)
   local keyCode = ev:getKeyCode()
   local keyAction = keyActions[keyCode] or "other"
   local eatAction = false -- pass the event on to the focused application
