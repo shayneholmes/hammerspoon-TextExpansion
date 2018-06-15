@@ -49,7 +49,7 @@ obj.expansionDefaults = {
   backspace = true, -- remove the abbreviation
   -- casesensitive = false, -- case of abbreviation must match exactly TODO
   -- matchcase = true, -- make expansion conform in case to the abbreviation (works only for first caps, all caps) TODO
-  -- omitcompletionkey = false, -- don't send the completion key TODO
+  omitcompletionkey = false, -- don't send the completion key
   -- resetrecognizer = false, -- reset the recognizer after each completion TODO
   -- expansion = nil, -- not in default, must be defined
   -- abbreviation = nil, -- at format time, contains the actual abbreviation that triggered this expansion
@@ -185,6 +185,7 @@ end
 function obj:handleEvent(ev)
   local keyCode = ev:getKeyCode()
   local keyAction = keyActions[keyCode] or "other"
+  local eatAction = false -- pass the event on to the focused application
   if ev:getFlags().cmd then
     keyAction = "reset"
   end
@@ -197,6 +198,9 @@ function obj:handleEvent(ev)
     local expansion = self:getExpansion(abbreviation)
     local expansion = self:formatExpansion(expansion)
     generateKeystrokes(expansion)
+    if expansion and expansion["omitcompletionkey"] then
+      eatAction = true
+    end
     self:resetAbbreviation()
   else -- add character to abbreviation
     local c = ev:getCharacters()
@@ -208,7 +212,7 @@ function obj:handleEvent(ev)
   pendingTimer = hs.timer.doAfter(self.timeoutSeconds, function() self:resetAbbreviationTimeout() end)
   -- print("Current abbreviation: " .. abbreviation)
 
-  return false -- pass the event on to the focused application
+  return eatAction
 end
 
 --- TextExpansion:start()
@@ -223,7 +227,7 @@ function obj:start()
   end
   generateKeyActions(self.specialKeys)
   self:resetAbbreviation()
-  keyWatcher = hs.eventtap.new({ hs.eventtap.event.types.keyDown }, function(ev) self:handleEvent(ev) end)
+  keyWatcher = hs.eventtap.new({ hs.eventtap.event.types.keyDown }, function(ev) return self:handleEvent(ev) end)
   keyWatcher:start()
 end
 
