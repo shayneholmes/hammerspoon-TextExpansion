@@ -105,6 +105,7 @@ obj.timeoutSeconds = 3
 local debug
 local keyWatcher
 local keyActions -- generated on start() from specialKeys
+local expansions -- generated on start()
 local abbreviation
 local pendingTimer
 
@@ -114,6 +115,16 @@ function generateKeyActions(array)
     for _,keyName in pairs(keyTable) do
       keyActions[keyMap[keyName]] = action
     end
+  end
+end
+
+function obj:generateExpansions()
+  expansions = {}
+  for k,v in pairs(self.expansions) do
+    if type(v) ~= "table" then
+      v = {["expansion"] = v}
+    end
+    expansions[k] = merge_tables(self.expansionDefaults, v)
   end
 end
 
@@ -129,15 +140,12 @@ function merge_tables(default, override)
 end
 
 function obj:getExpansion(abbreviation)
-  local expansion = self.expansions[abbreviation]
+  local expansion = expansions[abbreviation]
   if expansion == nil then
     return nil
   end
-  if type(expansion) ~= "table" then
-    expansion = {["expansion"] = expansion}
-  end
   expansion.abbreviation = abbreviation
-  return merge_tables(self.expansionDefaults, expansion)
+  return expansion
 end
 
 function obj:formatOutput(output)
@@ -235,6 +243,7 @@ function obj:start()
     keyWatcher:stop()
   end
   generateKeyActions(self.specialKeys)
+  self:generateExpansions()
   self:resetAbbreviation()
   keyWatcher = hs.eventtap.new({ hs.eventtap.event.types.keyDown }, function(ev) return self:handleEvent(ev) end)
   keyWatcher:start()
