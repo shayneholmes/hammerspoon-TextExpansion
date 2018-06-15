@@ -138,7 +138,7 @@ function obj:getExpansion(abbreviation)
   if type(expansion) ~= "table" then
     expansion = {["expansion"] = expansion}
   end
-  expansion["abbreviation"] = abbreviation
+  expansion.abbreviation = abbreviation
   return merge_tables(self.expansionDefaults, expansion)
 end
 
@@ -158,7 +158,7 @@ function obj:formatExpansion(expansion)
   if expansion == nil then
     return
   end
-  expansion["expansion"] = self:formatOutput(expansion["expansion"])
+  expansion.expansion = self:formatOutput(expansion.expansion)
   return expansion;
 end
 
@@ -175,12 +175,12 @@ function generateKeystrokes(expansion)
   if expansion == nil then
     return
   end
-  local output = expansion["expansion"]
-  local backspace = expansion["backspace"]
+  local output = expansion.expansion
+  local backspace = expansion.backspace
   if output then
     keyWatcher:stop()
     if backspace then
-      for i = 1, utf8.len(expansion["abbreviation"]), 1 do hs.eventtap.keyStroke({}, "delete", 0) end
+      for i = 1, utf8.len(expansion.abbreviation), 1 do hs.eventtap.keyStroke({}, "delete", 0) end
     end
     hs.eventtap.keyStrokes(output)
     keyWatcher:start()
@@ -209,7 +209,7 @@ function obj:handleEvent(ev)
     local expansion = self:formatExpansion(expansion)
     generateKeystrokes(expansion)
     debugTable(expansion)
-    if expansion and expansion["omitcompletionkey"] then
+    if expansion and expansion.omitcompletionkey then
       eatAction = true
     end
     self:resetAbbreviation()
