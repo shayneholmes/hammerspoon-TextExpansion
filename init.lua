@@ -250,13 +250,12 @@ local function handleEvent(self, ev)
       eatAction = true
     end
     resetAbbreviation()
-  else -- add character to abbreviation
-    local s = ev:getCharacters()
-    if s then
-     for p, c in utf8.codes(s) do
-       buffer:push(c)
-     end
-   end
+  end
+  local s = ev:getCharacters()
+  if s then -- add character to abbreviation
+    for p, c in utf8.codes(s) do
+      buffer:push(c)
+    end
   end
   if pendingTimer then
     pendingTimer:stop()
