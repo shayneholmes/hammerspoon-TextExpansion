@@ -273,7 +273,7 @@ end
 
 --- TextExpansion:stop()
 --- Method
---- Stop the keyboard event watcher.
+--- Stop and uninitialize the keyboard event watcher.
 function obj:stop()
   if keyWatcher == nil then
     print("Warning: watcher is already stopped!")
