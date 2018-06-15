@@ -16,7 +16,9 @@ local obj={}
 obj.__index = obj
 
 -- Dependencies
-local keyMap = require"hs.keycodes".map
+local eventtap = hs.eventtap
+local keyMap = hs.keycodes.map
+local doAfter = hs.timer.doAfter
 
 -- Metadata
 obj.name = "TextExpansion"
@@ -199,9 +201,9 @@ local function generateKeystrokes(expansion)
   if output then
     keyWatcher:stop()
     if backspace then
-      for i = 1, utf8.len(expansion.abbreviation), 1 do hs.eventtap.keyStroke({}, "delete", 0) end
+      for i = 1, utf8.len(expansion.abbreviation), 1 do eventtap.keyStroke({}, "delete", 0) end
     end
-    hs.eventtap.keyStrokes(output)
+    eventtap.keyStrokes(output)
     keyWatcher:start()
   end
 end
@@ -239,7 +241,7 @@ local function handleEvent(self, ev)
   if pendingTimer then
     pendingTimer:stop()
   end
-  pendingTimer = hs.timer.doAfter(self.timeoutSeconds, function() resetAbbreviationTimeout() end)
+  pendingTimer = doAfter(self.timeoutSeconds, function() resetAbbreviationTimeout() end)
   if debug then print("Current abbreviation: " .. abbreviation) end
 
   return eatAction
@@ -259,7 +261,7 @@ function obj:start()
   generateKeyActions(self)
   generateExpansions(self)
   resetAbbreviation()
-  keyWatcher = hs.eventtap.new({ hs.eventtap.event.types.keyDown }, function(ev) return handleEvent(self, ev) end)
+  keyWatcher = eventtap.new({ eventtap.event.types.keyDown }, function(ev) return handleEvent(self, ev) end)
   keyWatcher:start()
 end
 
