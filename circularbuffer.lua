@@ -5,7 +5,7 @@ local array -- table of size bufferSize
 local head -- array[head] is the space after the last item
 local tail -- array[tail] is the first item
 local count
-local debug = true -- set to true to get debug spew
+local debug -- set to true to get debug spew
 
 local function asserts()
   actualSize = head - tail
