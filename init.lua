@@ -109,16 +109,16 @@ local expansions -- generated on start()
 local abbreviation
 local pendingTimer
 
-function generateKeyActions(array)
+function generateKeyActions(self)
   keyActions = {}
-  for action,keyTable in pairs(array) do
+  for action,keyTable in pairs(self.specialKeys) do
     for _,keyName in pairs(keyTable) do
       keyActions[keyMap[keyName]] = action
     end
   end
 end
 
-function obj:generateExpansions()
+function generateExpansions(self)
   expansions = {}
   for k,v in pairs(self.expansions) do
     if type(v) ~= "table" then
@@ -128,7 +128,7 @@ function obj:generateExpansions()
   end
 end
 
-function obj:resetAbbreviation()
+function resetAbbreviation()
   abbreviation = ""
 end
 
@@ -139,7 +139,7 @@ function merge_tables(default, override)
   return combined
 end
 
-function obj:getExpansion(abbreviation)
+function getExpansion(abbreviation)
   local expansion = expansions[abbreviation]
   if expansion == nil then
     return nil
@@ -148,7 +148,7 @@ function obj:getExpansion(abbreviation)
   return expansion
 end
 
-function obj:formatOutput(output)
+function formatOutput(output)
   if type(output) == "function" then
     local _, result = pcall(output)
     if not _ then
@@ -160,11 +160,11 @@ function obj:formatOutput(output)
   return output
 end
 
-function obj:formatExpansion(expansion)
+function formatExpansion(expansion)
   if expansion == nil then
     return
   end
-  expansion.expansion = self:formatOutput(expansion.expansion)
+  expansion.expansion = formatOutput(expansion.expansion)
   return expansion;
 end
 
@@ -193,12 +193,12 @@ function generateKeystrokes(expansion)
   end
 end
 
-function obj:resetAbbreviationTimeout()
+function resetAbbreviationTimeout()
   if debug then print("timed out") end
-  self:resetAbbreviation()
+  resetAbbreviation()
 end
 
-function obj:handleEvent(ev)
+function handleEvent(self, ev)
   local keyCode = ev:getKeyCode()
   local keyAction = keyActions[keyCode] or "other"
   local eatAction = false -- pass the event on to the focused application
@@ -206,19 +206,19 @@ function obj:handleEvent(ev)
     keyAction = "reset"
   end
   if keyAction == "reset" then
-    self:resetAbbreviation()
+    resetAbbreviation()
   elseif keyAction == "delete" then -- delete the last character
     local lastChar = utf8.offset(abbreviation, -1) or 0
     abbreviation = abbreviation:sub(1, lastChar-1)
   elseif keyAction == "complete" then
-    local expansion = self:getExpansion(abbreviation)
-    local expansion = self:formatExpansion(expansion)
+    local expansion = getExpansion(abbreviation)
+    local expansion = formatExpansion(expansion)
     generateKeystrokes(expansion)
     debugTable(expansion)
     if expansion and expansion.omitcompletionkey then
       eatAction = true
     end
-    self:resetAbbreviation()
+    resetAbbreviation()
   else -- add character to abbreviation
     local c = ev:getCharacters()
     if c then abbreviation = abbreviation .. c end
@@ -226,7 +226,7 @@ function obj:handleEvent(ev)
   if pendingTimer then
     pendingTimer:stop()
   end
-  pendingTimer = hs.timer.doAfter(self.timeoutSeconds, function() self:resetAbbreviationTimeout() end)
+  pendingTimer = hs.timer.doAfter(self.timeoutSeconds, function() resetAbbreviationTimeout() end)
   if debug then print("Current abbreviation: " .. abbreviation) end
 
   return eatAction
@@ -242,10 +242,10 @@ function obj:start()
     print("Warning: watcher is already running! Restarting...")
     keyWatcher:stop()
   end
-  generateKeyActions(self.specialKeys)
-  self:generateExpansions()
-  self:resetAbbreviation()
-  keyWatcher = hs.eventtap.new({ hs.eventtap.event.types.keyDown }, function(ev) return self:handleEvent(ev) end)
+  generateKeyActions(self)
+  generateExpansions(self)
+  resetAbbreviation()
+  keyWatcher = hs.eventtap.new({ hs.eventtap.event.types.keyDown }, function(ev) return handleEvent(self, ev) end)
   keyWatcher:start()
 end
 
