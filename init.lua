@@ -36,38 +36,44 @@ obj.license = "MIT - https://opensource.org/licenses/MIT"
 --- The value of each entry represents the **expansion**. It is one of:
 --- * A string value containing the expanded text
 --- * A nullary function (no parameters) that returns the expanded text
+--- * A table with the key "expansion" containing either of the above, alongside any of the options from `expansionDefaultOptions`
 ---
 --- A simple example:
 --- ```
 --- spoon.TextExpansion.expansions = {
----     ["date"] = function() return os.date("%B %d, %Y") end,
----     ["name"] = "my name is foo",
+---   ["sig"] = "Sincerely, Foo",
+---   ["dt"] = function() return os.date("%B %d, %Y") end,
+---   ["hamm"] = {
+---     expansion = "erspoon",
+---     backspace = false,
+---   },
 --- }
 --- ```
 obj.expansions = {}
 
-obj.expansionDefaults = {
-  -- internal = false, -- trigger even inside another word TODO
-  backspace = true, -- remove the abbreviation
-  -- casesensitive = false, -- case of abbreviation must match exactly TODO
-  -- matchcase = true, -- make expansion conform in case to the abbreviation (works only for first caps, all caps) TODO
-  omitcompletionkey = false, -- don't send the completion key
-  -- resetrecognizer = false, -- reset the recognizer after each completion TODO
-  -- expansion = nil, -- not in default, must be defined
-  -- abbreviation = nil, -- at format time, contains the actual abbreviation that triggered this expansion
-}
-
+--- TextExpansion.expansionDefaultOptions
+--- Variable
+--- Table containing options to be applied to expansions by default. The following keys are valid:
+--- * **backspace** (default true): Use backspaces to remove the abbreviation when it is expanded.
+--- * **sendcompletionkey** (default true): When an abbreviation is completed, send the completion key along with it.
+-- Options still TODO
 -- Recognizer:
---   internal
---   casesensitive
+--   internal = false, -- trigger even inside another word
+--   casesensitive = false, -- case of abbreviation must match exactly
 -- Expander:
---   matchcase
+--   matchcase = true, -- make expansion conform in case to the abbreviation (works only for first caps, all caps)
 -- Output:
---   resetrecognizer
+--   resetrecognizer = false, -- reset the recognizer after each completion
+obj.expansionDefaultOptions = {
+  backspace = true, -- remove the abbreviation
+  sendcompletionkey = true, -- send the completion key
+  -- expansion = nil, -- not in default, must be defined
+  -- abbreviation = nil, -- at format time, populated with the actual abbreviation that triggered this expansion
+}
 
 --- TextExpansion.specialKeys
 --- Variable
---- Table containing information about special keys. It contains two tables within it:
+--- Table containing information about special keys. It contains the following tables within it:
 ---
 --- * The `specialKeys.complete` table contains keys that signal completion of an abbreviation. When one of these keys is pressed, the abbreviation is checked against the list of abbreviations specified as the keys in `TextExpansion.expansions`. If a match is found, the abbreviation is deleted and replaced with the corresponding expansion. Then the completion key is sent.
 ---
@@ -146,7 +152,7 @@ local function generateExpansions(self)
     if type(v) ~= "table" then
       v = {["expansion"] = v}
     end
-    expansions[k] = merge_tables(self.expansionDefaults, v)
+    expansions[k] = merge_tables(self.expansionDefaultOptions, v)
   end
 end
 
@@ -230,7 +236,7 @@ local function handleEvent(self, ev)
     local expansion = formatExpansion(expansion)
     generateKeystrokes(expansion)
     debugTable(expansion)
-    if expansion and expansion.omitcompletionkey then
+    if expansion and not expansion.sendcompletionkey then
       eatAction = true
     end
     resetAbbreviation()
