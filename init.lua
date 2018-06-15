@@ -104,6 +104,7 @@ obj.specialKeys = {
 obj.timeoutSeconds = 3
 
 -- Internal variables
+local debug
 local keyWatcher
 local keyActions -- generated on start() from specialKeys
 local abbreviation
@@ -161,6 +162,15 @@ function obj:formatExpansion(expansion)
   return expansion;
 end
 
+function debugTable(table)
+  if not debug then
+    return
+  end
+  if table then
+    for k,v in pairs(table) do print(string.format("%s -> %s", k, v)) end
+  end
+end
+
 function generateKeystrokes(expansion)
   if expansion == nil then
     return
@@ -178,7 +188,7 @@ function generateKeystrokes(expansion)
 end
 
 function obj:resetAbbreviationTimeout()
-  -- print("timed out")
+  if debug then print("timed out") end
   self:resetAbbreviation()
 end
 
@@ -198,6 +208,7 @@ function obj:handleEvent(ev)
     local expansion = self:getExpansion(abbreviation)
     local expansion = self:formatExpansion(expansion)
     generateKeystrokes(expansion)
+    debugTable(expansion)
     if expansion and expansion["omitcompletionkey"] then
       eatAction = true
     end
@@ -210,7 +221,7 @@ function obj:handleEvent(ev)
     pendingTimer:stop()
   end
   pendingTimer = hs.timer.doAfter(self.timeoutSeconds, function() self:resetAbbreviationTimeout() end)
-  -- print("Current abbreviation: " .. abbreviation)
+  if debug then print("Current abbreviation: " .. abbreviation) end
 
   return eatAction
 end
@@ -241,6 +252,14 @@ function obj:stop()
   end
   keyWatcher:stop()
   keyWatcher = nil
+end
+
+function obj:setDebug(val)
+  if val then
+    debug = true
+  else
+    debug = false
+  end
 end
 
 return obj
