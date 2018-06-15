@@ -203,7 +203,7 @@ local function isMatch(abbr, expansion)
     local isWholeWord = (buffer:size() <= len+offset) or (not isPrintable(buffer:get(len+offset+1)))
     if debug then print(("%s in buffer? %s (isWholeWord? %s)"):format(abbr, isMatch, isWholeWord)) end
     if isMatch and isWholeWord then
-      expansion.abbreviation = buffer:getAll():sub(-len,-offset)
+      expansion.abbreviation = buffer:getAll():sub(-len)
       return true
     end
   end
@@ -257,7 +257,13 @@ local function generateKeystrokes(expansion)
   if output then
     keyWatcher:stop()
     if backspace then
-      for i = 1, utf8.len(expansion.abbreviation), 1 do eventtap.keyStroke({}, "delete", 0) end
+      local backspaces = utf8.len(expansion.abbreviation)
+      if not expansion.waitforcompletionkey then
+        backspaces = backspaces - 1 -- part of the abbreviation hasn't been output, so don't backspace that
+      end
+      for i = 1, backspaces, 1 do
+        eventtap.keyStroke({}, "delete", 0)
+      end
     end
     eventtap.keyStrokes(output)
     keyWatcher:start()
@@ -296,12 +302,20 @@ local function handleEvent(self, ev)
     end
     local expansion = getMatchingExpansion()
     if expansion then
-      local expansion = formatExpansion(expansion)
-      generateKeystrokes(expansion)
-      debugTable(expansion)
       if not expansion.sendcompletionkey then
         eatAction = true
       end
+      local expansion = formatExpansion(expansion)
+      if not expansion.waitforcompletionkey -- the key event we're holding now is part of the abbreviation, it should stick with the abbreviation
+        and not expansion.backspace -- if we were backspacing, the abbreviation wouldn't be around to be examined
+        and expansion.sendcompletionkey -- if we weren't sending it, the order wouldn't matter, now would it?
+        then
+        -- give time for the other event to be processed first
+        doAfter(0, function() generateKeystrokes(expansion) end)
+      else
+        generateKeystrokes(expansion)
+      end
+      debugTable(expansion)
       if expansion.resetrecognizer then
         resetAbbreviation()
       end
