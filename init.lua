@@ -64,17 +64,18 @@ obj.expansions = {}
 --- Variable
 --- Table containing options to be applied to expansions by default. The following keys are valid:
 --- * **backspace** (default true): Use backspaces to remove the abbreviation when it is expanded.
+--- * **internal** (default false): Trigger the expansion even when the abbreviation is inside another word
 --- * **resetrecognizer** (default false): When an abbreviation is completed, reset the recognizer.
 --- * **sendcompletionkey** (default true): When an abbreviation is completed, send the completion key along with it.
 --- * **waitforcompletionkey** (default true): Wait for a completion key before expanding the abbreviation.
 -- Options still TODO
 -- Recognizer:
---   internal = false, -- trigger even inside another word
 --   casesensitive = false, -- case of abbreviation must match exactly
 -- Expander:
 --   matchcase = true, -- make expansion conform in case to the abbreviation (works only for first caps, all caps)
 obj.defaults = {
   backspace = true, -- remove the abbreviation
+  internal = false, -- trigger even inside another word
   resetrecognizer = false, -- reset the recognizer after each completion
   sendcompletionkey = true, -- send the completion key
   waitforcompletionkey = true, -- wait for a completion key
@@ -199,15 +200,20 @@ local function isMatch(abbr, expansion)
     offset = 0
   end
   local isMatch = buffer:matches(abbr, offset)
-  if isMatch then
+  if not isMatch then
+    if debug then print("Buffer doesn't match abbreviation") end
+    return false
+  end
+  if not expansion.internal then
     local isWholeWord = (buffer:size() <= len+offset) or (not isPrintable(buffer:get(len+offset+1)))
     if debug then print(("%s in buffer? %s (isWholeWord? %s)"):format(abbr, isMatch, isWholeWord)) end
-    if isMatch and isWholeWord then
-      expansion.abbreviation = buffer:getAll():sub(-len)
-      return true
+    if not isWholeWord then
+      if debug then print("Buried inside another word") end
+      return false
     end
   end
-  return false
+  expansion.abbreviation = buffer:getAll():sub(-len)
+  return true
 end
 
 local function getMatchingExpansion()
