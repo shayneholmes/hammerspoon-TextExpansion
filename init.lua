@@ -45,12 +45,12 @@ obj.license = "MIT - https://opensource.org/licenses/MIT"
 obj.expansions = {}
 
 obj.expansionDefaults = {
-  internal = false, -- trigger even inside another word TODO
+  -- internal = false, -- trigger even inside another word TODO
   backspace = true, -- remove the abbreviation
-  casesensitive = false, -- case of abbreviation must match exactly TODO
-  matchcase = true, -- make expansion conform in case to the abbreviation (works only for first caps, all caps) TODO
-  omitcompletionkey = false, -- don't send the completion key TODO
-  resetrecognizer = false, -- reset the recognizer after each completion TODO
+  -- casesensitive = false, -- case of abbreviation must match exactly TODO
+  -- matchcase = true, -- make expansion conform in case to the abbreviation (works only for first caps, all caps) TODO
+  -- omitcompletionkey = false, -- don't send the completion key TODO
+  -- resetrecognizer = false, -- reset the recognizer after each completion TODO
   -- expansion = nil, -- not in default, must be defined
   -- abbreviation = nil, -- at format time, contains the actual abbreviation that triggered this expansion
 }
