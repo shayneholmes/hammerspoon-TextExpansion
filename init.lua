@@ -36,7 +36,7 @@ obj.license = "MIT - https://opensource.org/licenses/MIT"
 --- The value of each entry represents the **expansion**. It is one of:
 --- * A string value containing the expanded text
 --- * A nullary function (no parameters) that returns the expanded text
---- * A table with the key "expansion" containing either of the above, alongside any of the options from `expansionDefaultOptions`
+--- * A table with the key "expansion" containing either of the above, alongside any of the options from `defaults`
 ---
 --- A simple example:
 --- ```
@@ -51,7 +51,7 @@ obj.license = "MIT - https://opensource.org/licenses/MIT"
 --- ```
 obj.expansions = {}
 
---- TextExpansion.expansionDefaultOptions
+--- TextExpansion.defaults
 --- Variable
 --- Table containing options to be applied to expansions by default. The following keys are valid:
 --- * **backspace** (default true): Use backspaces to remove the abbreviation when it is expanded.
@@ -64,7 +64,7 @@ obj.expansions = {}
 --   matchcase = true, -- make expansion conform in case to the abbreviation (works only for first caps, all caps)
 -- Output:
 --   resetrecognizer = false, -- reset the recognizer after each completion
-obj.expansionDefaultOptions = {
+obj.defaults = {
   backspace = true, -- remove the abbreviation
   sendcompletionkey = true, -- send the completion key
   -- expansion = nil, -- not in default, must be defined
@@ -152,7 +152,7 @@ local function generateExpansions(self)
     if type(v) ~= "table" then
       v = {["expansion"] = v}
     end
-    expansions[k] = merge_tables(self.expansionDefaultOptions, v)
+    expansions[k] = merge_tables(self.defaults, v)
   end
 end
 
