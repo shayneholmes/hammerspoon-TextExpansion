@@ -234,7 +234,7 @@ end
 
 --- TextExpansion:start()
 --- Method
---- Start the keyboard event watcher.
+--- Read expansions, and start the keyboard event watcher.
 ---
 --- You must make any changes to `TextExpansion.expansions` and `TextExpansion.specialKeys` before this method is called; any further changes to them won't take effect until the watcher is started again.
 function obj:start()
@@ -242,6 +242,7 @@ function obj:start()
     print("Warning: watcher is already running! Restarting...")
     keyWatcher:stop()
   end
+  if debug then print("Starting keyboard event watcher.") end
   generateKeyActions(self)
   generateExpansions(self)
   resetAbbreviation()
@@ -257,8 +258,48 @@ function obj:stop()
     print("Warning: watcher is already stopped!")
     return
   end
+  if debug then print("Stopping keyboard event watcher.") end
   keyWatcher:stop()
   keyWatcher = nil
+end
+
+--- TextExpansion:suspend()
+--- Method
+--- Suspend the keyboard event watcher.
+function obj:suspend()
+  if keyWatcher == nil then
+    print("Error: watcher isn't initialized! Call TextExpansion:start() first.")
+    return
+  end
+  if not keyWatcher:isEnabled() then
+    print("Warning: watcher is already suspended! No change.")
+  else
+    if debug then print("Suspending keyboard event watcher.") end
+    keyWatcher:stop()
+  end
+end
+
+--- TextExpansion:resume()
+--- Method
+--- Resume the keyboard event watcher.
+function obj:resume()
+  if keyWatcher == nil then
+    print("Error: watcher isn't initialized! Call TextExpansion:start() first.")
+    return
+  end
+  if keyWatcher:isEnabled() then
+    print("Warning: watcher is already running! No change.")
+  else
+    if debug then print("Resuming keyboard event watcher.") end
+    keyWatcher:start()
+  end
+end
+
+--- TextExpansion:isActive()
+--- Method
+--- Returns true if the keyboard event watcher is configured and active.
+function obj:isActive()
+  return keyWatcher and keyWatcher:isEnabled()
 end
 
 function obj:resetAbbreviation()
