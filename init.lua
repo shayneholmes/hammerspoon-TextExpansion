@@ -60,9 +60,7 @@ obj.expansionDefaults = {
 --   casesensitive
 -- Expander:
 --   matchcase
---   omitcompletionkey
 -- Output:
---   backspace
 --   resetrecognizer
 
 --- TextExpansion.specialKeys
