@@ -172,13 +172,20 @@ local function resetAbbreviation()
   buffer:clear()
 end
 
-local function getExpansion(abbreviation)
+local function isPrintable(char)
+  return char ~= " "
+end
+
+local function getMatchingExpansion(buffer)
   for abbr, expansion in pairs(expansions) do
     local isMatch = buffer:endsWith(abbr)
-    if debug then print(("%s in buffer? %s"):format(abbr, isMatch)) end
     if isMatch then
-      expansion.abbreviation = abbreviation:sub(-#abbr)
-      return expansion
+      local isWholeWord = (buffer:size() <= #abbr) or (not isPrintable(buffer:get(#abbr+1)))
+      if debug then print(("%s in buffer? %s (isWholeWord? %s)"):format(abbr, isMatch, isWholeWord)) end
+      if isMatch and isWholeWord then
+        expansion.abbreviation = buffer:getAll():sub(-#abbr)
+        return expansion
+      end
     end
   end
   return nil
@@ -188,7 +195,7 @@ local function formatOutput(output)
   if type(output) == "function" then
     local _, result = pcall(output)
     if not _ then
-      print("~~ expansion for '" .. buffer:get() .. "' gave an error of " .. result)
+      print("~~ expansion for '" .. buffer:getAll() .. "' gave an error of " .. result)
       result = nil
     end
     output = result
@@ -253,28 +260,26 @@ local function handleEvent(self, ev)
   elseif keyAction == "delete" then -- delete the last character
     buffer:pop()
   else
-    if keyAction == "complete" then
-      local expansion = getExpansion(buffer:get())
+    local expansion = getMatchingExpansion(buffer)
+    if expansion then
       local expansion = formatExpansion(expansion)
       generateKeystrokes(expansion)
       debugTable(expansion)
-      if expansion then
-        if not expansion.sendcompletionkey then
-          eatAction = true
-        end
-        if expansion.resetrecognizer then
-          resetAbbreviation()
-        end
+      if not expansion.sendcompletionkey then
+        eatAction = true
+      end
+      if expansion.resetrecognizer then
+        resetAbbreviation()
       end
     end
     local s = ev:getCharacters()
-    if s then -- add character to abbreviation
+    if s then -- add character to buffer
       for p, c in utf8.codes(s) do
         buffer:push(c)
       end
     end
   end
-  if debug then print("Current abbreviation: " .. buffer:get()) end
+  if debug then print("Current abbreviation: " .. buffer:getAll()) end
 
   return eatAction
 end

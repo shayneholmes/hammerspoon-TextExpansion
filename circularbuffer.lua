@@ -44,7 +44,14 @@ function obj:init(size)
   count = 0
 end
 
-function obj:get()
+function obj:get(offset) -- offset back from head
+  assert(offset <= count, "offset is greater than count")
+  assert(offset > 0, "offset is zero")
+  if debug then asserts() end
+  return utf8.char(array[mod(head-offset)])
+end
+
+function obj:getAll()
   local slice = {}
   local cur = tail
   while cur ~= head do
