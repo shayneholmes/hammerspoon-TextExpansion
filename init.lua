@@ -83,8 +83,8 @@ obj.expansionDefaults = {
 --- ```
 obj.specialKeys = {
   complete = {
-    "return", "space", "padenter", "tab", ".",
-    ",", ";", ":", "/", "\"", "(", ")",
+    "return", "space", "padenter", "tab",
+    ".", ",", ";", "/", "'",
   },
   reset = {
     "escape", "help", "forwarddelete",
