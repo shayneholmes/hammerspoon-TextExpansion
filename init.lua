@@ -64,6 +64,7 @@ obj.expansions = {}
 --- Variable
 --- Table containing options to be applied to expansions by default. The following keys are valid:
 --- * **backspace** (default true): Use backspaces to remove the abbreviation when it is expanded.
+--- * **resetrecognizer** (default false): When an abbreviation is completed, reset the recognizer.
 --- * **sendcompletionkey** (default true): When an abbreviation is completed, send the completion key along with it.
 -- Options still TODO
 -- Recognizer:
@@ -71,10 +72,9 @@ obj.expansions = {}
 --   casesensitive = false, -- case of abbreviation must match exactly
 -- Expander:
 --   matchcase = true, -- make expansion conform in case to the abbreviation (works only for first caps, all caps)
--- Output:
---   resetrecognizer = false, -- reset the recognizer after each completion
 obj.defaults = {
   backspace = true, -- remove the abbreviation
+  resetrecognizer = false, -- reset the recognizer after each completion
   sendcompletionkey = true, -- send the completion key
   -- expansion = nil, -- not in default, must be defined
   -- abbreviation = nil, -- at format time, populated with the actual abbreviation that triggered this expansion
@@ -258,10 +258,14 @@ local function handleEvent(self, ev)
       local expansion = formatExpansion(expansion)
       generateKeystrokes(expansion)
       debugTable(expansion)
-      if expansion and not expansion.sendcompletionkey then
-        eatAction = true
+      if expansion then
+        if not expansion.sendcompletionkey then
+          eatAction = true
+        end
+        if expansion.resetrecognizer then
+          resetAbbreviation()
+        end
       end
-      resetAbbreviation()
     end
     local s = ev:getCharacters()
     if s then -- add character to abbreviation
