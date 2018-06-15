@@ -62,14 +62,16 @@ function obj:getAll()
   return utf8.char(table.unpack(slice))
 end
 
-function obj:endsWith(str)
+function obj:matches(str, pos)
+  -- pos is an offset from the end
   local len = utf8.len(str)
-  if len > count then
+  local start = mod(head - len - pos)
+  if len + pos > count then
     return false
   end
-  local cur = mod(head - len)
+  local cur = start
   for p, c in utf8.codes(str) do
-    if debug then print(("array[%d] = %d <-> %d = str[%d]"):format(cur, array[cur], c, p)) end
+    if debug then print(("array[%d] = %d <-> %d = str[%d]"):format(cur, array[cur] or 0, c, p)) end
     if array[cur] ~= c then
       return false
     end

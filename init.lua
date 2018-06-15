@@ -66,6 +66,7 @@ obj.expansions = {}
 --- * **backspace** (default true): Use backspaces to remove the abbreviation when it is expanded.
 --- * **resetrecognizer** (default false): When an abbreviation is completed, reset the recognizer.
 --- * **sendcompletionkey** (default true): When an abbreviation is completed, send the completion key along with it.
+--- * **waitforcompletionkey** (default true): Wait for a completion key before expanding the abbreviation.
 -- Options still TODO
 -- Recognizer:
 --   internal = false, -- trigger even inside another word
@@ -76,6 +77,7 @@ obj.defaults = {
   backspace = true, -- remove the abbreviation
   resetrecognizer = false, -- reset the recognizer after each completion
   sendcompletionkey = true, -- send the completion key
+  waitforcompletionkey = true, -- wait for a completion key
   -- expansion = nil, -- not in default, must be defined
   -- abbreviation = nil, -- at format time, populated with the actual abbreviation that triggered this expansion
 }
@@ -172,20 +174,46 @@ local function resetAbbreviation()
   buffer:clear()
 end
 
-local function isPrintable(char)
-  return char ~= " "
+local endChars = " \r\n\t;:(){},"
+
+local function isEndChar(char)
+  return endChars:find(char, 1, 1) ~= nil
 end
 
-local function getMatchingExpansion(buffer)
+local printableChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+
+local function isPrintable(char)
+  return printableChars:find(char, 1, 1) ~= nil
+end
+
+local function isMatch(abbr, expansion)
+  if debug then print(("Considering abbreviation %s"):format(abbr)) end
+  len = utf8.len(abbr)
+  if expansion.waitforcompletionkey then
+    if not isEndChar(buffer:get(1)) then
+      if debug then print(("Not an end character: %s"):format(buffer:get(1))) end
+      return false
+    end
+    offset = 1
+  else
+    offset = 0
+  end
+  local isMatch = buffer:matches(abbr, offset)
+  if isMatch then
+    local isWholeWord = (buffer:size() <= len+offset) or (not isPrintable(buffer:get(len+offset+1)))
+    if debug then print(("%s in buffer? %s (isWholeWord? %s)"):format(abbr, isMatch, isWholeWord)) end
+    if isMatch and isWholeWord then
+      expansion.abbreviation = buffer:getAll():sub(-len,-offset)
+      return true
+    end
+  end
+  return false
+end
+
+local function getMatchingExpansion()
   for abbr, expansion in pairs(expansions) do
-    local isMatch = buffer:endsWith(abbr)
-    if isMatch then
-      local isWholeWord = (buffer:size() <= #abbr) or (not isPrintable(buffer:get(#abbr+1)))
-      if debug then print(("%s in buffer? %s (isWholeWord? %s)"):format(abbr, isMatch, isWholeWord)) end
-      if isMatch and isWholeWord then
-        expansion.abbreviation = buffer:getAll():sub(-#abbr)
-        return expansion
-      end
+    if isMatch(abbr, expansion) then
+      return expansion
     end
   end
   return nil
@@ -260,7 +288,13 @@ local function handleEvent(self, ev)
   elseif keyAction == "delete" then -- delete the last character
     buffer:pop()
   else
-    local expansion = getMatchingExpansion(buffer)
+    local s = ev:getCharacters()
+    if s then -- add character to buffer
+      for p, c in utf8.codes(s) do
+        buffer:push(c)
+      end
+    end
+    local expansion = getMatchingExpansion()
     if expansion then
       local expansion = formatExpansion(expansion)
       generateKeystrokes(expansion)
@@ -270,12 +304,6 @@ local function handleEvent(self, ev)
       end
       if expansion.resetrecognizer then
         resetAbbreviation()
-      end
-    end
-    local s = ev:getCharacters()
-    if s then -- add character to buffer
-      for p, c in utf8.codes(s) do
-        buffer:push(c)
       end
     end
   end
