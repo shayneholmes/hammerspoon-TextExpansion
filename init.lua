@@ -251,20 +251,23 @@ local function debugTable(table)
   end
 end
 
+local function sendBackspaces(expansion)
+  if expansion.backspace then
+    local backspaces = utf8.len(expansion.abbreviation)
+    if not expansion.waitforcompletionkey then
+      backspaces = backspaces - 1 -- part of the abbreviation hasn't been output, so don't backspace that
+    end
+    for i = 1, backspaces, 1 do
+      eventtap.keyStroke({}, "delete", 0)
+    end
+  end
+end
+
 local function generateKeystrokes(expansion)
   local output = expansion.expansion
-  local backspace = expansion.backspace
   if output then
     keyWatcher:stop()
-    if backspace then
-      local backspaces = utf8.len(expansion.abbreviation)
-      if not expansion.waitforcompletionkey then
-        backspaces = backspaces - 1 -- part of the abbreviation hasn't been output, so don't backspace that
-      end
-      for i = 1, backspaces, 1 do
-        eventtap.keyStroke({}, "delete", 0)
-      end
-    end
+    sendBackspaces(expansion)
     eventtap.keyStrokes(output)
     keyWatcher:start()
   end
