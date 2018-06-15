@@ -261,6 +261,10 @@ function obj:stop()
   keyWatcher = nil
 end
 
+function obj:resetAbbreviation()
+  resetAbbreviation()
+end
+
 function obj:setDebug(val)
   if val then
     debug = true
