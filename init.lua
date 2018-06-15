@@ -308,10 +308,10 @@ function obj:resume()
   end
 end
 
---- TextExpansion:isActive()
+--- TextExpansion:isEnabled()
 --- Method
 --- Returns true if the keyboard event watcher is configured and active.
-function obj:isActive()
+function obj:isEnabled()
   return keyWatcher and keyWatcher:isEnabled()
 end
 
