@@ -225,20 +225,18 @@ local function getMatchingExpansion()
   return nil
 end
 
-local function formatOutput(output)
+local function evaluateExpansion(expansion)
+  -- place the result in output
+  output = expansion.expansion
   if type(output) == "function" then
     local _, result = pcall(output)
     if not _ then
-      print("~~ expansion for '" .. buffer:getAll() .. "' gave an error of " .. result)
+      print("~~ expansion for '" .. expansion.abbreviation .. "' gave an error of " .. result)
       result = nil
     end
     output = result
   end
-  return output
-end
-
-local function formatExpansion(expansion)
-  expansion.expansion = formatOutput(expansion.expansion)
+  expansion.output = output
   return expansion;
 end
 
@@ -264,7 +262,7 @@ local function sendBackspaces(expansion)
 end
 
 local function generateKeystrokes(expansion)
-  local output = expansion.expansion
+  local output = expansion.output
   if output then
     keyWatcher:stop()
     sendBackspaces(expansion)
@@ -308,7 +306,7 @@ local function handleEvent(self, ev)
       if not expansion.sendcompletionkey then
         eatAction = true
       end
-      local expansion = formatExpansion(expansion)
+      local expansion = evaluateExpansion(expansion)
       if not expansion.waitforcompletionkey -- the key event we're holding now is part of the abbreviation, it should stick with the abbreviation
         and not expansion.backspace -- if we were backspacing, the abbreviation wouldn't be around to be examined
         and expansion.sendcompletionkey -- if we weren't sending it, the order wouldn't matter, now would it?
