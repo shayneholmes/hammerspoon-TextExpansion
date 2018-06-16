@@ -23,6 +23,7 @@ end
 obj.spoonPath = script_path()
 
 buffer = dofile(obj.spoonPath.."/circularbuffer.lua")
+trie = dofile(obj.spoonPath.."/trie.lua")
 
 -- Dependencies
 local eventtap = hs.eventtap
