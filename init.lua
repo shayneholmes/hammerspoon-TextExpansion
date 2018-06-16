@@ -340,6 +340,8 @@ function obj:start()
   generateExpansions(self)
   timeoutSeconds = self.timeoutSeconds
   buffer:init(maxAbbreviationLength)
+  local t = trie:create(expansions)
+  trie:print(t)
   resetAbbreviation()
   keyWatcher = eventtap.new({ eventtap.event.types.keyDown }, function(ev) return handleEvent(self, ev) end)
   keyWatcher:start()
