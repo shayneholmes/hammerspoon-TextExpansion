@@ -4,9 +4,13 @@ obj = {}
 
 function obj:create(expansions)
   local root = {}
+  root["wordboundary"] = {}
   for abbr,exp in pairs(expansions) do
     -- add each abbreviation to the trie with exp at its leaf
     local cur = root
+    if exp.internal then
+      cur = cur["wordboundary"]
+    end
     for p, c in utf8.codes(abbr) do
       if cur[c] == nil then
         cur[c] = {}
@@ -23,12 +27,16 @@ local function print_helper(trie, depth)
     return
   end
   local preface = string.rep("-", depth)
-  for char, trie in pairs(trie) do
-    if char == "expansion" then
-      print(trie.expansion)
+  for key, val in pairs(trie) do
+    if key == "expansion" then
+      print(val.expansion)
     else
-      print(preface .. utf8.char(char))
-      print_helper(trie, depth + 1)
+      local label = key
+      if type(label) == "number" then
+        label = utf8.char(label)
+      end
+      print(preface .. label)
+      print_helper(val, depth + 1)
     end
   end
 end
