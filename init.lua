@@ -241,10 +241,7 @@ local function evaluateExpansion(expansion)
 end
 
 local function debugTable(table)
-  if not debug then
-    return
-  end
-  if table then
+  if debug and table then
     for k,v in pairs(table) do print(string.format("%s -> %s", k, v)) end
   end
 end
