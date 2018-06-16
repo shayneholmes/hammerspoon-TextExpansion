@@ -191,8 +191,8 @@ local function isMatch(abbr, expansion)
   if debug then print(("Considering abbreviation %s"):format(abbr)) end
   len = utf8.len(abbr)
   if expansion.waitforcompletionkey then
-    if not isEndChar(buffer:get(1)) then
-      if debug then print(("Not an end character: %s"):format(buffer:get(1))) end
+    if not isEndChar(buffer:getChar(1)) then
+      if debug then print(("Not an end character: %s"):format(buffer:getChar(1))) end
       return false
     end
     offset = 1
@@ -205,7 +205,7 @@ local function isMatch(abbr, expansion)
     return false
   end
   if not expansion.internal then
-    local isWholeWord = (buffer:size() <= len+offset) or (not isPrintable(buffer:get(len+offset+1)))
+    local isWholeWord = (buffer:size() <= len+offset) or (not isPrintable(buffer:getChar(len+offset+1)))
     if debug then print(("%s in buffer? %s (isWholeWord? %s)"):format(abbr, isMatch, isWholeWord)) end
     if not isWholeWord then
       if debug then print("Buried inside another word") end

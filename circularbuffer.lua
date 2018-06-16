@@ -21,6 +21,7 @@ local function asserts()
 end
 
 local function mod(n)
+  -- keep n between 1 and bufferSize, inclusive
   return (n - 1) % bufferSize + 1
 end
 
@@ -40,26 +41,32 @@ function obj:init(size)
   bufferSize = size
   array = {}
   head = 1
-  tail = 1
+  tail = head
   count = 0
 end
 
-function obj:get(offset) -- offset back from head
-  assert(offset <= count, "offset is greater than count")
-  assert(offset > 0, "offset is zero")
+function obj:getChar(offset) -- offset back from head
+  assert(offset <= count, "offset must be no greater than count")
+  assert(offset > 0, "offset must be greater than zero")
   if debug then asserts() end
   return utf8.char(array[mod(head-offset)])
 end
 
-function obj:getAll()
+function obj:getChars(offset) -- starting at head-offset
+  assert(offset <= count, "offset must be less than count")
+  assert(offset >= 0, "offset must be at least zero")
   local slice = {}
-  local cur = tail
+  local cur = mod(head-offset)
   while cur ~= head do
     slice[#slice+1] = array[cur]
     cur = inc(cur)
   end
   if debug then asserts() end
   return utf8.char(table.unpack(slice))
+end
+
+function obj:getAll()
+  return self:getChars(count)
 end
 
 function obj:matches(str, pos)
