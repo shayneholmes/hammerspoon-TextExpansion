@@ -116,15 +116,15 @@ local function getsetnumber(nodecollection)
     lastset = lastset + 1
     set = lastset
     definitions[key] = set
-    print(("Adding new set %d for key '%s'"):format(set,key))
+    -- print(("Adding new set %d for key '%s'"):format(set,key))
   else
-    print(("Reusing set %d for key '%s'"):format(set,key))
+    -- print(("Reusing set %d for key '%s'"):format(set,key))
   end
-  print(("Returning %s, %s"):format(set,new))
+  -- print(("Returning %s, %s"):format(set,new))
   return set, new
 end
 
-local function printdfs(dfs)
+function obj:printdfs(dfs)
   for i,transitions in pairs(dfs) do
     for edge,v in pairs(transitions) do
       if edge == "_expansions" then
@@ -162,20 +162,20 @@ function obj:dfs(trie)
   while not queue:empty() do
     local nodes = queue:popleft()
     local activeset = getsetnumber(nodes)
-    print(("Considering set %s"):format(getkey(nodes)))
+    -- print(("Considering set %s"):format(getkey(nodes)))
     local expansions = {}
     local transitions = {} -- transitions[c] is the set of trie nodes that c goes to
     for _,node in pairs(nodes) do
       for k,v in pairs(node) do
         if k == "_expansion" then
-          print("Expansion; skipping")
+          -- print("Expansion; skipping")
           expansions[#expansions+1] = v
         else
           local key = k
           if type(key) == "number" then
             key = utf8.char(key)
           end
-          print(("Adding transition %s"):format(key))
+          -- print(("Adding transition %s"):format(key))
           if not transitions[k] then
             transitions[k] = {v}
           else
@@ -187,15 +187,15 @@ function obj:dfs(trie)
     local dfsedges = {} -- dfsedges[c] is a single set id
     for k,v in pairs(transitions) do
       if internals[k] then -- always evaluate starting new internals
-        print(("Adding internal starter %s"):format(utf8.char(k)))
+        -- print(("Adding internal starter %s"):format(utf8.char(k)))
         v[#v+1] = internals[k]
       end
       local setnumber, new = getsetnumber(v)
-      print(("Got %s, %s"):format(setnumber,new))
+      -- print(("Got %s, %s"):format(setnumber,new))
       dfsedges[k] = setnumber
       -- if new, add it to the queue
       if new then
-        print(("Adding set %d to queue"):format(setnumber))
+        -- print(("Adding set %d to queue"):format(setnumber))
         queue:pushright(v)
       end
     end
@@ -204,7 +204,6 @@ function obj:dfs(trie)
   end
   lastset = 0
   definitions = nil
-  printdfs(dfssets)
   return dfssets
 end
 
