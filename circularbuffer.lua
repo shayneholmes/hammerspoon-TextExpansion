@@ -45,13 +45,13 @@ end
 
 function obj:getEnding(length)
   assert(length <= count, "length must be no greater than count")
-  assert(length > 0, "length must be greater than zero")
   local slice = {}
   local cur = mod(head-length)
-  while cur ~= head do
+  for _=1,count do
     slice[#slice+1] = array[cur]
     cur = inc(cur)
   end
+  if debug then assert(cur == head) end
   if debug then asserts() end
   return slice
 end
