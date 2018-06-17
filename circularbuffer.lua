@@ -3,8 +3,7 @@ obj = {}
 local bufferSize
 local array -- table of size bufferSize
 local head -- array[head] is the space after the last item
-local tail -- array[tail] is the first item
-local count
+local count -- defines how much of the buffer is used
 local debug -- set to true to get debug spew
 
 local function mod(n)
@@ -21,16 +20,8 @@ local function dec(n)
 end
 
 local function asserts()
-  actualSize = head - tail
-  if actualSize < 0 then
-    actualSize = actualSize + bufferSize
-  end
-  assert(actualSize == count)
   assert(0 <= count)
-  assert(count < bufferSize)
-  print(( "count: %d" ):format(count))
-  print(( "head: %d" ):format(head))
-  print(( "top: %s" ):format(array[mod(head-1)]))
+  assert(count <= bufferSize)
 end
 
 function obj:init(size)
@@ -41,8 +32,8 @@ function obj:init(size)
   bufferSize = size
   array = {}
   head = 1
-  tail = head
   count = 0
+  if debug then asserts() end
 end
 
 function obj:getHead()
@@ -52,63 +43,43 @@ function obj:getHead()
   return array[mod(head-1)]
 end
 
-function obj:getChars(offset) -- starting at head-offset
-  assert(offset <= count, "offset must be less than count")
-  assert(offset >= 0, "offset must be at least zero")
+function obj:getEnding(length)
+  assert(length <= count, "length must be no greater than count")
+  assert(length > 0, "length must be greater than zero")
   local slice = {}
-  local cur = mod(head-offset)
+  local cur = mod(head-length)
   while cur ~= head do
     slice[#slice+1] = array[cur]
     cur = inc(cur)
   end
   if debug then asserts() end
-  return utf8.char(table.unpack(slice))
+  return slice
 end
 
 function obj:getAll()
-  return self:getChars(count)
-end
-
-function obj:matches(str, pos)
-  -- pos is an offset from the end
-  local len = utf8.len(str)
-  local start = mod(head - len - pos)
-  if len + pos > count then
-    return false
-  end
-  local cur = start
-  for p, c in utf8.codes(str) do
-    if debug then print(("array[%d] = %d <-> %d = str[%d]"):format(cur, array[cur] or 0, c, p)) end
-    if array[cur] ~= c then
-      return false
-    end
-    cur = inc(cur)
-  end
-  return true
+  return self:getEnding(count)
 end
 
 function obj:push(data)
   array[head] = data
   head = inc(head)
-  if tail == head then
-    tail = inc(head) -- old data got eaten
-  else
+  if count < bufferSize then
     count = count + 1
   end
   if debug then asserts() end
 end
 
 function obj:pop()
-  if tail == head then
-    return -- already empty
+  if count == 0 then
+    return nil -- already empty
   end
   head = dec(head)
   count = count - 1
   if debug then asserts() end
+  return array[head]
 end
 
 function obj:clear()
-  tail = head
   count = 0
   if debug then asserts() end
 end
