@@ -23,6 +23,7 @@ end
 obj.spoonPath = script_path()
 
 buffer = dofile(obj.spoonPath.."/circularbuffer.lua")
+states = dofile(obj.spoonPath.."/circularbuffer.lua")
 trie = dofile(obj.spoonPath.."/trie.lua")
 
 -- Dependencies
@@ -135,7 +136,8 @@ obj.specialKeys = {
 --- If no new events arrive in that time period, TextExpansion will forget the abbreviation underway.
 obj.timeoutSeconds = 10
 
-local maxStatesUndo = 40
+local maxAbbreviationLength = 40
+local maxStatesUndo = 10
 
 -- Internal variables
 local debug
@@ -175,7 +177,7 @@ local function generateExpansions(self)
 end
 
 local function resetAbbreviation()
-  buffer:clear()
+  states:clear()
 end
 
 local endChars = " \r\n\t;:(){},"
@@ -188,35 +190,6 @@ local printableChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123
 
 local function isPrintable(char)
   return printableChars:find(char, 1, 1) ~= nil
-end
-
-local function isMatch(abbr, expansion)
-  if debug then print(("Considering abbreviation %s"):format(abbr)) end
-  len = utf8.len(abbr)
-  if expansion.waitforcompletionkey then
-    if not isEndChar(buffer:getHead()) then
-      if debug then print(("Not an end character: %s"):format(buffer:getHead())) end
-      return false
-    end
-    offset = 1
-  else
-    offset = 0
-  end
-  local isMatch = buffer:matches(abbr, offset)
-  if not isMatch then
-    if debug then print("Buffer doesn't match abbreviation") end
-    return false
-  end
-  if not expansion.internal then
-    local isWholeWord = (buffer:size() <= len+offset) or (not isPrintable(buffer:getHead()))
-    if debug then print(("%s in buffer? %s (isWholeWord? %s)"):format(abbr, isMatch, isWholeWord)) end
-    if not isWholeWord then
-      if debug then print("Buried inside another word") end
-      return false
-    end
-  end
-  expansion.abbreviation = buffer:getAll():sub(-len)
-  return true
 end
 
 local function getMatchingExpansion(state)
@@ -295,19 +268,20 @@ local function handleEvent(self, ev)
     resetAbbreviation()
   elseif keyAction == "delete" then -- delete the last character, go back to previous state
     buffer:pop()
+    states:pop()
   else
-    local state = buffer:getHead() or 1
+    local state = states:getHead() or 1
     local oldState = state
     local s = ev:getCharacters()
     if s then -- follow transition to next state
       local isCompletion = isEndChar(s)
       if isCompletion then
         state = dfs[state]["_completion"] or 1
-        buffer:push(state)
+        states:push(state)
       else
         for p, c in utf8.codes(s) do
           state = dfs[state][c] or dfs[2][c] or 2 -- to internals
-          buffer:push(state)
+          states:push(state)
         end
       end
     end
@@ -331,7 +305,7 @@ local function handleEvent(self, ev)
       if expansion.resetrecognizer then
         resetAbbreviation()
       elseif isCompletion then
-        buffer:push(1) -- reset after completions
+        states:push(1) -- reset after completions
       end
     end
   end
@@ -353,8 +327,9 @@ function obj:start()
   generateKeyActions(self)
   generateExpansions(self)
   timeoutSeconds = self.timeoutSeconds
-  buffer:init(maxStatesUndo)
-  buffer:push(1) -- start in root set
+  buffer:init(maxAbbreviationLength)
+  states:init(maxStatesUndo)
+  states:push(1) -- start in root set
   local t = trie:create(expansions)
   trie:print(t)
   dfs = trie:dfs(t)
