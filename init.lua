@@ -335,9 +335,7 @@ function obj:start()
   buffer:init(maxAbbreviationLength)
   states:init(maxStatesUndo)
   states:push(1) -- start in root set
-  local t = trie:create(expansions)
-  if debug then trie:print(t) end
-  dfs = trie:dfs(t)
+  dfs = trie:createdfs(expansions)
   if debug then trie:printdfs(dfs) end
   resetAbbreviation()
   keyWatcher = eventtap.new({ eventtap.event.types.keyDown }, function(ev) return handleEvent(self, ev) end)

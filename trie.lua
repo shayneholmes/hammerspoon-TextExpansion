@@ -43,7 +43,7 @@ end
 
 obj = {}
 
-function obj:create(expansions)
+function obj:createtrie(expansions)
   local root = {}
   root["wordboundary"] = {}
   root["internal"] = {}
@@ -205,6 +205,11 @@ function obj:dfs(trie)
   lastset = 0
   definitions = nil
   return dfssets
+end
+
+function obj:createdfs(expansions)
+  local trie = self:createtrie(expansions)
+  return self:dfs(trie)
 end
 
 return obj
