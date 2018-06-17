@@ -197,16 +197,6 @@ local function isPrintable(char)
   return printableChars:find(char, 1, 1) ~= nil
 end
 
-local function getMatchingExpansion(state)
-  local expansions = dfs[state]._expansions
-  if expansions then
-    for _,x in pairs(expansions) do
-      return x
-    end
-  end
-  return nil
-end
-
 local function evaluateExpansion(expansion)
   -- place the result in output
   output = expansion.expansion
@@ -220,6 +210,16 @@ local function evaluateExpansion(expansion)
   end
   expansion.output = output
   return expansion;
+end
+
+local function getMatchingExpansion(state)
+  local expansions = dfs[state]._expansions
+  if expansions then
+    for _,x in pairs(expansions) do
+      return evaluateExpansion(x)
+    end
+  end
+  return nil
 end
 
 local function debugTable(table)
@@ -282,36 +282,35 @@ local function handleEvent(self, ev)
       local isCompletion = isEndChar(s)
       if isCompletion then
         state = dfs[state]["_completion"] or 1
-        states:push(state)
-      else
-        for p, c in utf8.codes(s) do
+      end
+      for p, c in utf8.codes(s) do
+        buffer:push(c)
+        if not isCompletion then
           state = dfs[state][c] or dfs[2][c] or 2 -- to internals
-          states:push(state)
-          buffer:push(c)
         end
       end
-    end
-    if debug then print(( "%d -> %s -> %d" ):format(oldState, s, state)) end
-    local expansion = getMatchingExpansion(state)
-    if expansion then
-      if not expansion.sendcompletionkey then
-        eatAction = true
-      end
-      local expansion = evaluateExpansion(expansion)
-      if not expansion.waitforcompletionkey -- the key event we're holding now is part of the abbreviation, it should stick with the abbreviation
-        and not expansion.backspace -- if we were backspacing, the abbreviation wouldn't be around to be examined
-        and expansion.sendcompletionkey -- if we weren't sending it, the order wouldn't matter, now would it?
-        then
-        -- give time for the other event to be processed first
-        doAfter(0, function() generateKeystrokes(expansion) end)
-      else
-        generateKeystrokes(expansion)
-      end
-      debugTable(expansion)
-      if expansion.resetrecognizer then
-        resetAbbreviation()
-      elseif isCompletion then
-        states:push(1) -- reset after completions
+      states:push(state)
+      if debug then print(( "%d -> %s -> %d" ):format(oldState, s, state)) end
+      local expansion = getMatchingExpansion(state)
+      if expansion then
+        if not expansion.sendcompletionkey then
+          eatAction = true
+        end
+        if not expansion.waitforcompletionkey -- the key event we're holding now is part of the abbreviation, it should stick with the abbreviation
+          and not expansion.backspace -- if we were backspacing, the abbreviation wouldn't be around to be examined
+          and expansion.sendcompletionkey -- if we weren't sending it, the order wouldn't matter, now would it?
+          then
+          -- give time for the other event to be processed first
+          doAfter(0, function() generateKeystrokes(expansion) end)
+        else
+          generateKeystrokes(expansion)
+        end
+        debugTable(expansion)
+        if expansion.resetrecognizer then
+          resetAbbreviation()
+        elseif isCompletion then
+          states:push(1) -- reset after completions
+        end
       end
     end
   end
