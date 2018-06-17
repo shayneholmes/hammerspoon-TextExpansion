@@ -177,7 +177,12 @@ local function generateExpansions(self)
 end
 
 local function resetAbbreviation()
+  buffer:clear()
   states:clear()
+end
+
+local function printBuffer()
+  print(("Buffer: %s"):format(utf8.char(table.unpack(buffer:getAll()))))
 end
 
 local endChars = " \r\n\t;:(){},"
@@ -282,6 +287,7 @@ local function handleEvent(self, ev)
         for p, c in utf8.codes(s) do
           state = dfs[state][c] or dfs[2][c] or 2 -- to internals
           states:push(state)
+          buffer:push(c)
         end
       end
     end
@@ -309,7 +315,7 @@ local function handleEvent(self, ev)
       end
     end
   end
-
+  if debug then printBuffer() end
   return eatAction
 end
 
