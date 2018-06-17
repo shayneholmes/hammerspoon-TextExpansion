@@ -133,15 +133,16 @@ obj.specialKeys = {
 --- Length of time, in seconds, to wait before timeout.
 ---
 --- If no new events arrive in that time period, TextExpansion will forget the abbreviation underway.
-obj.timeoutSeconds = 3
+obj.timeoutSeconds = 10
 
-local maxAbbreviationLength = 40
+local maxStatesUndo = 40
 
 -- Internal variables
 local debug
 local keyWatcher
 local keyActions -- generated on start() from specialKeys
 local expansions -- generated on start()
+local dfs -- generated on start()
 local abbreviation
 local pendingTimer
 local timeoutSeconds
@@ -168,6 +169,7 @@ local function generateExpansions(self)
     if type(v) ~= "table" then
       v = {["expansion"] = v}
     end
+    v.abbreviation = k
     expansions[k] = merge_tables(self.defaults, v)
   end
 end
@@ -192,8 +194,8 @@ local function isMatch(abbr, expansion)
   if debug then print(("Considering abbreviation %s"):format(abbr)) end
   len = utf8.len(abbr)
   if expansion.waitforcompletionkey then
-    if not isEndChar(buffer:getChar(1)) then
-      if debug then print(("Not an end character: %s"):format(buffer:getChar(1))) end
+    if not isEndChar(buffer:getHead()) then
+      if debug then print(("Not an end character: %s"):format(buffer:getHead())) end
       return false
     end
     offset = 1
@@ -206,7 +208,7 @@ local function isMatch(abbr, expansion)
     return false
   end
   if not expansion.internal then
-    local isWholeWord = (buffer:size() <= len+offset) or (not isPrintable(buffer:getChar(len+offset+1)))
+    local isWholeWord = (buffer:size() <= len+offset) or (not isPrintable(buffer:getHead()))
     if debug then print(("%s in buffer? %s (isWholeWord? %s)"):format(abbr, isMatch, isWholeWord)) end
     if not isWholeWord then
       if debug then print("Buried inside another word") end
@@ -217,10 +219,11 @@ local function isMatch(abbr, expansion)
   return true
 end
 
-local function getMatchingExpansion()
-  for abbr, expansion in pairs(expansions) do
-    if isMatch(abbr, expansion) then
-      return expansion
+local function getMatchingExpansion(state)
+  local expansions = dfs[state]._expansions
+  if expansions then
+    for _,x in pairs(expansions) do
+      return x
     end
   end
   return nil
@@ -290,16 +293,26 @@ local function handleEvent(self, ev)
   end
   if keyAction == "reset" then
     resetAbbreviation()
-  elseif keyAction == "delete" then -- delete the last character
+  elseif keyAction == "delete" then -- delete the last character, go back to previous state
     buffer:pop()
   else
+    local state = buffer:getHead() or 1
+    local oldState = state
     local s = ev:getCharacters()
-    if s then -- add character to buffer
-      for p, c in utf8.codes(s) do
-        buffer:push(c)
+    if s then -- follow transition to next state
+      local isCompletion = isEndChar(s)
+      if isCompletion then
+        state = dfs[state]["_completion"] or 1
+        buffer:push(state)
+      else
+        for p, c in utf8.codes(s) do
+          state = dfs[state][c] or dfs[2][c] or 2 -- to internals
+          buffer:push(state)
+        end
       end
     end
-    local expansion = getMatchingExpansion()
+    if debug then print(( "%d -> %s -> %d" ):format(oldState, s, state)) end
+    local expansion = getMatchingExpansion(state)
     if expansion then
       if not expansion.sendcompletionkey then
         eatAction = true
@@ -317,10 +330,11 @@ local function handleEvent(self, ev)
       debugTable(expansion)
       if expansion.resetrecognizer then
         resetAbbreviation()
+      elseif isCompletion then
+        buffer:push(1) -- reset after completions
       end
     end
   end
-  if debug then print("Current abbreviation: " .. buffer:getAll()) end
 
   return eatAction
 end
@@ -339,9 +353,11 @@ function obj:start()
   generateKeyActions(self)
   generateExpansions(self)
   timeoutSeconds = self.timeoutSeconds
-  buffer:init(maxAbbreviationLength)
+  buffer:init(maxStatesUndo)
+  buffer:push(1) -- start in root set
   local t = trie:create(expansions)
   trie:print(t)
+  dfs = trie:dfs(t)
   resetAbbreviation()
   keyWatcher = eventtap.new({ eventtap.event.types.keyDown }, function(ev) return handleEvent(self, ev) end)
   keyWatcher:start()

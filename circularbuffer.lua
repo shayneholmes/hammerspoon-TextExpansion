@@ -7,19 +7,6 @@ local tail -- array[tail] is the first item
 local count
 local debug -- set to true to get debug spew
 
-local function asserts()
-  actualSize = head - tail
-  if actualSize < 0 then
-    actualSize = actualSize + bufferSize
-  end
-  assert(actualSize == count)
-  assert(0 <= count)
-  assert(count < bufferSize)
-  print(( "count: %d" ):format(count))
-  print(( "head: %d" ):format(head))
-  print(( "array: %s" ):format(utf8.char(table.unpack(array))))
-end
-
 local function mod(n)
   -- keep n between 1 and bufferSize, inclusive
   return (n - 1) % bufferSize + 1
@@ -31,6 +18,19 @@ end
 
 local function dec(n)
   return mod(n - 1)
+end
+
+local function asserts()
+  actualSize = head - tail
+  if actualSize < 0 then
+    actualSize = actualSize + bufferSize
+  end
+  assert(actualSize == count)
+  assert(0 <= count)
+  assert(count < bufferSize)
+  print(( "count: %d" ):format(count))
+  print(( "head: %d" ):format(head))
+  print(( "top: %s" ):format(array[mod(head-1)]))
 end
 
 function obj:init(size)
@@ -45,11 +45,11 @@ function obj:init(size)
   count = 0
 end
 
-function obj:getChar(offset) -- offset back from head
-  assert(offset <= count, "offset must be no greater than count")
-  assert(offset > 0, "offset must be greater than zero")
-  if debug then asserts() end
-  return utf8.char(array[mod(head-offset)])
+function obj:getHead()
+  if count == 0 then
+    return nil
+  end
+  return array[mod(head-1)]
 end
 
 function obj:getChars(offset) -- starting at head-offset
