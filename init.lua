@@ -22,9 +22,8 @@ local function script_path()
 end
 obj.spoonPath = script_path()
 
-buffer = dofile(obj.spoonPath.."/circularbuffer.lua")
-states = dofile(obj.spoonPath.."/circularbuffer.lua")
-trie = dofile(obj.spoonPath.."/trie.lua")
+local circularbuffer = dofile(obj.spoonPath.."/circularbuffer.lua")
+local trie = dofile(obj.spoonPath.."/trie.lua")
 
 -- Dependencies
 local eventtap = hs.eventtap
@@ -140,6 +139,8 @@ local maxAbbreviationLength = 40
 local maxStatesUndo = 10
 
 -- Internal variables
+local buffer
+local states
 local debug
 local keyWatcher
 local keyActions -- generated on start() from specialKeys
@@ -332,8 +333,8 @@ function obj:start()
   generateKeyActions(self)
   generateExpansions(self)
   timeoutSeconds = self.timeoutSeconds
-  buffer:init(maxAbbreviationLength)
-  states:init(maxStatesUndo)
+  buffer = circularbuffer.new(maxAbbreviationLength)
+  states = circularbuffer.new(maxStatesUndo)
   states:push(1) -- start in root set
   dfs = trie:createdfs(expansions)
   if debug then trie:printdfs(dfs) end
