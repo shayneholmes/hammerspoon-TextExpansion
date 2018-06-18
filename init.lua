@@ -186,6 +186,10 @@ local function printBuffer()
   print(("Buffer: %s"):format(utf8.char(table.unpack(buffer:getAll()))))
 end
 
+local function printStateHistory()
+  print(("States: %s"):format(table.concat(states:getAll(),",")))
+end
+
 local endChars = " \r\n\t;:(){},"
 
 local function isEndChar(char)
@@ -315,7 +319,7 @@ local function handleEvent(self, ev)
       end
     end
   end
-  if debug then printBuffer() end
+  if debug then printBuffer() printStateHistory() end
   return eatAction
 end
 
