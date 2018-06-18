@@ -218,7 +218,7 @@ local function evaluateExpansion(expansion)
 end
 
 local function getMatchingExpansion(state)
-  local expansions = dfs[state]._expansions
+  local expansions = dfs[state].expansions
   if expansions then
     for _,x in pairs(expansions) do
       return evaluateExpansion(x)
@@ -286,12 +286,12 @@ local function handleEvent(self, ev)
     if s then -- follow transition to next state
       local isCompletion = isEndChar(s)
       if isCompletion then
-        state = dfs[state]["_completion"] or 1
+        state = dfs[state].transitions["_completion"] or 1
       end
       for p, c in utf8.codes(s) do
         buffer:push(c)
         if not isCompletion then
-          state = dfs[state][c] or dfs[2][c] or 2 -- to internals
+          state = dfs[state].transitions[c] or dfs[2].transitions[c] or 2 -- to internals
         end
       end
       states:push(state)
