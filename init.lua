@@ -323,17 +323,7 @@ local function handleEvent(self, ev)
   return eatAction
 end
 
---- TextExpansion:start()
---- Method
---- Read expansions, and start the keyboard event watcher.
----
---- You must make any changes to `TextExpansion.expansions` and `TextExpansion.specialKeys` before this method is called; any further changes to them won't take effect until the watcher is started again.
-function obj:start()
-  if keyWatcher ~= nil then
-    print("Warning: watcher is already running! Restarting...")
-    keyWatcher:stop()
-  end
-  if debug then print("Starting keyboard event watcher.") end
+local function init(self)
   generateKeyActions(self)
   generateExpansions(self)
   timeoutSeconds = self.timeoutSeconds
@@ -344,6 +334,20 @@ function obj:start()
   if debug then trie:printdfs(dfs) end
   resetAbbreviation()
   keyWatcher = eventtap.new({ eventtap.event.types.keyDown }, function(ev) return handleEvent(self, ev) end)
+end
+
+--- TextExpansion:start()
+--- Method
+--- Read expansions, and start the keyboard event watcher.
+---
+--- You must make any changes to `TextExpansion.expansions` and `TextExpansion.specialKeys` before this method is called; any further changes to them won't take effect until the watcher is started again.
+function obj:start()
+  if keyWatcher ~= nil then
+    print("Warning: watcher is already running! Restarting...")
+    keyWatcher:stop()
+  end
+  init(self)
+  if debug then print("Starting keyboard event watcher.") end
   keyWatcher:start()
 end
 
