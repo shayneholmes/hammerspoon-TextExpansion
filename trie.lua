@@ -131,7 +131,7 @@ print_trie = function(trie)
   print_helper(trie, 0)
 end
 
-local dfssets
+local dfasets
 local lastset
 local definitions
 local debug = true
@@ -163,8 +163,8 @@ local function getsetnumber(nodecollection)
   return set, new
 end
 
-function obj:printdfs(dfs)
-  for i,state in pairs(dfs) do
+function obj:printdfa(dfa)
+  for i,state in pairs(dfa) do
     for _,x in pairs(state.expansions or {}) do
       if type(x) == "table" then
         x = x.expansion
@@ -181,8 +181,8 @@ function obj:printdfs(dfs)
   end
 end
 
-function obj:dfs(wordboundaries, internals)
-  dfssets = {} -- dfssets[i] is a table containing characters containing set IDs
+function obj:dfa(wordboundaries, internals)
+  dfasets = {} -- dfasets[i] is a table containing characters containing set IDs
   lastset = 0
   definitions = {} -- defs[setkey] is the index of the set with the key
   local queue = List.new()
@@ -216,7 +216,7 @@ function obj:dfs(wordboundaries, internals)
         end
       end
     end
-    local dfsstate = {transitions = {}} -- dfsstate.transitions[c] is a single set id
+    local dfastate = {transitions = {}} -- dfastate.transitions[c] is a single set id
     for k,v in pairs(transitions) do
       if nodes ~= internalroot and internals.transitions[k] then -- always evaluate starting new internals (only if we're not rooted in the internals node)
         -- print(("Adding internal starter %s"):format(utf8.char(k)))
@@ -224,7 +224,7 @@ function obj:dfs(wordboundaries, internals)
       end
       local setnumber, new = getsetnumber(v)
       -- print(("Got %s, %s"):format(setnumber,new))
-      dfsstate.transitions[k] = setnumber
+      dfastate.transitions[k] = setnumber
       -- if new, add it to the queue
       if new then
         -- print(("Adding set %d to queue"):format(setnumber))
@@ -232,17 +232,17 @@ function obj:dfs(wordboundaries, internals)
       end
     end
     if #expansions > 0 then
-      dfsstate.expansions = expansions
+      dfastate.expansions = expansions
     end
-    dfssets[activeset] = dfsstate
+    dfasets[activeset] = dfastate
   end
   definitions = nil
-  return dfssets
+  return dfasets
 end
 
-function obj:createdfs(expansions)
+function obj:createdfa(expansions)
   local wordboundary, internals = self:createtries(expansions)
-  return self:dfs(wordboundary, internals)
+  return self:dfa(wordboundary, internals)
 end
 
 return obj

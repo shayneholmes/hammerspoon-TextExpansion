@@ -145,7 +145,7 @@ local debug
 local keyWatcher
 local keyActions -- generated on start() from specialKeys
 local expansions -- generated on start()
-local dfs -- generated on start()
+local dfa -- generated on start()
 local abbreviation
 local pendingTimer
 local timeoutSeconds
@@ -218,7 +218,7 @@ local function evaluateExpansion(expansion)
 end
 
 local function getMatchingExpansion(state)
-  local expansions = dfs[state].expansions
+  local expansions = dfa[state].expansions
   if expansions then
     for _,x in pairs(expansions) do
       return evaluateExpansion(x)
@@ -286,12 +286,12 @@ local function handleEvent(self, ev)
     if s then -- follow transition to next state
       local isCompletion = isEndChar(s)
       if isCompletion then
-        state = dfs[state].transitions["_completion"] or 1
+        state = dfa[state].transitions["_completion"] or 1
       end
       for p, c in utf8.codes(s) do
         buffer:push(c)
         if not isCompletion then
-          state = dfs[state].transitions[c] or dfs[2].transitions[c] or 2 -- to internals
+          state = dfa[state].transitions[c] or dfa[2].transitions[c] or 2 -- to internals
         end
       end
       states:push(state)
@@ -330,8 +330,8 @@ local function init(self)
   buffer = circularbuffer.new(maxAbbreviationLength)
   states = circularbuffer.new(maxStatesUndo)
   states:push(1) -- start in root set
-  dfs = trie:createdfs(expansions)
-  if debug then trie:printdfs(dfs) end
+  dfa = trie:createdfa(expansions)
+  if debug then trie:printdfa(dfa) end
   resetAbbreviation()
   keyWatcher = eventtap.new({ eventtap.event.types.keyDown }, function(ev) return handleEvent(self, ev) end)
 end
