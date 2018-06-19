@@ -1,4 +1,31 @@
--- Make a trie out of a group of expansions
+-- Make a deterministic finite automaton (DFA) out of expansions
+
+-- The output is a table of states, where each state has:
+-- - transitions: a table wherein each subelement has:
+--   - key: a UTF-8 character code describing the edge
+--   - value: the state the edge leads to
+-- - expansions: a list of expansions
+
+-- Each expansion is included in the DFA only once, at the end state described
+-- by its abbreviation.
+
+-- Two of the states are special:
+-- - State 1 is the root of the tree after a word boundary. After a completion
+--   event, the state should be reset to this node.
+-- - State 2 is the root state for "internal" abbreviations; that is, they can
+--   occur anywhere in a word. If a transition for a given node isn't found,
+--   state 2 should be checked as well.
+
+-- Note: Internal abbreviation starts are included in other nodes only when
+-- they intersect with existing transitions. For example: "btw" and internal
+-- "bb" would both be included in the 1 -> b transition, but an internal "abc"
+-- would not. Since 1 -> a isn't a valid transition, the caller needs to check
+-- state 2's transitions as well.
+
+-- Implementation: the expansions are first made into a trie (two tries for
+-- simplicity: one for word boundary abbreviations, another for internal
+-- abbreviations), which is interpreted as a non-deterministic finite automaton
+-- (NFA) and then converted into a DFA.
 
 List = {}
 List.__index = List
