@@ -196,12 +196,6 @@ local function isEndChar(char)
   return endChars:find(char, 1, 1) ~= nil
 end
 
-local printableChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-
-local function isPrintable(char)
-  return printableChars:find(char, 1, 1) ~= nil
-end
-
 local function evaluateExpansion(expansion)
   -- place the result in output
   output = expansion.expansion
