@@ -288,14 +288,19 @@ local function handleEvent(self, ev)
     local state = states:getHead() or 1
     local s = ev:getCharacters()
     if s then -- follow transition to next state
-      local isCompletion = isEndChar(s)
+      local isCompletion = false -- true if this transition moves to a completion node
       local nextstate = state
       for p, c in utf8.codes(s) do -- follow any valid transitions
         if nextstate ~= nil then nextstate = dfa[state].transitions[c] end
       end
       if nextstate == nil then -- no valid transitions
-        if isCompletion then -- check original state for completions, otherwise reset
-          nextstate = dfa[state].transitions["_completion"] or 1
+        if isEndChar(s) then -- check original state for completions, otherwise reset
+          nextstate = dfa[state].transitions["_completion"]
+          if nextstate == nil then
+            nextstate = 1
+          else
+            isCompletion = true -- go straight to word boundary state after this
+          end
         else
           nextstate = dfa[2].transitions[c] or 2 -- to internals
         end
@@ -323,6 +328,9 @@ local function handleEvent(self, ev)
         if expansion.resetrecognizer then
           resetAbbreviation()
         end
+      end
+      if isCompletion then
+        states:push(1) -- reset after completions
       end
     end
   end
