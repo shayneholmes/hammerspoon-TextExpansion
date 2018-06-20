@@ -286,22 +286,26 @@ local function handleEvent(self, ev)
     states:pop()
   else
     local state = states:getHead() or 1
-    local oldState = state
     local s = ev:getCharacters()
     if s then -- follow transition to next state
       local isCompletion = isEndChar(s)
-      if isCompletion then
-        state = dfa[state].transitions["_completion"] or 1
+      local nextstate = state
+      for p, c in utf8.codes(s) do -- follow any valid transitions
+        if nextstate ~= nil then nextstate = dfa[state].transitions[c] end
+      end
+      if nextstate == nil then -- no valid transitions
+        if isCompletion then -- check original state for completions, otherwise reset
+          nextstate = dfa[state].transitions["_completion"] or 1
+        else
+          nextstate = dfa[2].transitions[c] or 2 -- to internals
+        end
       end
       for p, c in utf8.codes(s) do
         buffer:push(c)
-        if not isCompletion then
-          state = dfa[state].transitions[c] or dfa[2].transitions[c] or 2 -- to internals
-        end
       end
-      states:push(state)
-      if debug then print(( "%d -> %s -> %d" ):format(oldState, s, state)) end
-      local expansion = getMatchingExpansion(state)
+      states:push(nextstate)
+      if debug then print(( "%d -> %s -> %d" ):format(state, s, nextstate)) end
+      local expansion = getMatchingExpansion(nextstate)
       if expansion then
         if not expansion.sendcompletionkey then
           eatAction = true
@@ -318,8 +322,6 @@ local function handleEvent(self, ev)
         debugTable(expansion)
         if expansion.resetrecognizer then
           resetAbbreviation()
-        elseif isCompletion then
-          states:push(1) -- reset after completions
         end
       end
     end
