@@ -213,15 +213,26 @@ local function evaluateExpansion(expansion)
     end
     output = result
   end
-  expansion.output = output
-  return expansion;
+  return output;
+end
+
+local function getAbbreviation(x)
+  local length = #x.abbreviation
+  if x.waitforcompletionkey then length = length + 1 end
+  local actual = utf8.char(table.unpack(buffer:getEnding(length)))
+  if debug then print(("Abbreviation interpreted: %s -> %s"):format(x.abbreviation,actual)) end
+  return actual
 end
 
 local function getMatchingExpansion(state)
   local expansions = dfa[state].expansions
   if expansions then
     for _,x in pairs(expansions) do
-      return evaluateExpansion(x)
+      if true then -- evaluate match
+        x.trigger = getAbbreviation(x)
+        x.output = evaluateExpansion(x)
+        return x
+      end
     end
   end
   return nil
