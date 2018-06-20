@@ -49,7 +49,7 @@ function CircularBuffer:getEnding(length)
   assert(length <= self.count, "length must be no greater than count")
   local slice = {}
   local cur = self:mod(self.head-length)
-  for _=1,self.count do
+  for _=1,length do
     slice[#slice+1] = self.array[cur]
     cur = self:inc(cur)
   end
