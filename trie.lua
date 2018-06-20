@@ -181,7 +181,7 @@ function obj:printdfa(dfa)
   end
 end
 
-function obj:dfa(wordboundaries, internals)
+function obj:dfa(wordboundaries, internals, isEndChar)
   dfasets = {} -- dfasets[i] is a table containing characters containing set IDs
   lastset = 0
   definitions = {} -- defs[setkey] is the index of the set with the key
@@ -210,9 +210,12 @@ function obj:dfa(wordboundaries, internals)
         end
         -- print(("Adding transition %s"):format(key))
         if not transitions[k] then
-          transitions[k] = {v}
-        else
-          transitions[k][#transitions[k]+1] = v
+          transitions[k] = {}
+        end
+        transitions[k][#transitions[k]+1] = v
+        if isEndChar(key) then -- the root node is in this set
+          print(("End char %s (%s)"):format(key,k))
+          transitions[k][#transitions[k]+1] = wordboundaries
         end
       end
     end
@@ -240,9 +243,9 @@ function obj:dfa(wordboundaries, internals)
   return dfasets
 end
 
-function obj:createdfa(expansions)
+function obj:createdfa(expansions, isEndChar)
   local wordboundary, internals = self:createtries(expansions)
-  return self:dfa(wordboundary, internals)
+  return self:dfa(wordboundary, internals, isEndChar)
 end
 
 return obj

@@ -345,7 +345,7 @@ local function init(self)
   buffer = circularbuffer.new(maxAbbreviationLength)
   states = circularbuffer.new(maxStatesUndo)
   states:push(1) -- start in root set
-  dfa = trie:createdfa(expansions)
+  dfa = trie:createdfa(expansions, isEndChar)
   if debug then trie:printdfa(dfa) end
   resetAbbreviation()
   keyWatcher = eventtap.new({ eventtap.event.types.keyDown }, function(ev) return handleEvent(self, ev) end)
