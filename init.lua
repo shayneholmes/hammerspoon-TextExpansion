@@ -81,7 +81,9 @@ obj.defaults = {
   sendcompletionkey = true, -- send the completion key
   waitforcompletionkey = true, -- wait for a completion key
   -- expansion = nil, -- not in default, must be defined
-  -- abbreviation = nil, -- at format time, populated with the actual abbreviation that triggered this expansion
+  -- abbreviation = nil, -- programmatically populated at start
+  -- output = nil, -- populated at trigger time
+  -- trigger = nil, -- populated at trigger time
 }
 
 --- TextExpansion.specialKeys
