@@ -27,6 +27,8 @@
 -- abbreviations), which is interpreted as a non-deterministic finite automaton
 -- (NFA) and then converted into a DFA.
 
+local debug = false
+
 List = {}
 List.__index = List
 function List.new ()
@@ -142,7 +144,6 @@ end
 local dfasets
 local lastset
 local definitions
-local debug = true
 
 local function getkey(nodecollection)
   -- each node has a "value" key that is numeric and unique
@@ -156,7 +157,7 @@ local function getkey(nodecollection)
   for k,v in pairs(ids) do
     key = key * nexttrienode + v
   end
-  print(("This node's key: %d"):format(key))
+  if debug then print(("This node's key: %d"):format(key)) end
   return key
 end
 
@@ -229,7 +230,7 @@ function obj:dfa(wordboundaries, internals, isEndChar)
         end
         transitions[k][#transitions[k]+1] = v
         if isEndChar(key) then -- the root node is in this set
-          print(("End char %s (%s)"):format(key,k))
+          if debug then print(("End char %s (%s)"):format(key,k)) end
           transitions[k][#transitions[k]+1] = wordboundaries
         end
       end
@@ -260,7 +261,8 @@ end
 
 function obj:createdfa(expansions, isEndChar)
   local wordboundary, internals = self:createtries(expansions)
-  return self:dfa(wordboundary, internals, isEndChar)
+  local dfa = self:dfa(wordboundary, internals, isEndChar)
+  return dfa
 end
 
 return obj
