@@ -141,7 +141,6 @@ print_trie = function(trie)
   print_helper(trie, 0)
 end
 
-local dfasets
 local lastset
 local definitions
 
@@ -198,7 +197,7 @@ function obj:printdfa(dfa)
 end
 
 function obj:dfa(wordboundaries, internals, isEndChar)
-  dfasets = {} -- dfasets[i] is a table containing characters containing set IDs
+  local dfasets = {} -- dfasets[i] is a table containing characters containing set IDs
   lastset = 0
   definitions = {} -- defs[setkey] is the index of the set with the key
   local queue = List.new()
