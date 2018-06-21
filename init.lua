@@ -90,8 +90,6 @@ obj.defaults = {
 --- Variable
 --- Table containing information about special keys. It contains the following tables within it:
 ---
---- * The `specialKeys.complete` table contains keys that signal completion of an abbreviation. When one of these keys is pressed, the abbreviation is checked against the list of abbreviations specified as the keys in `TextExpansion.expansions`. If a match is found, the abbreviation is deleted and replaced with the corresponding expansion. Then the completion key is sent.
----
 --- * The `specialKeys.reset` table contains the names of keys that should reset any abbreviation in progress. (For example, typing `da<left>te` does not trigger an expansion of "date".)
 ---
 --- * The `specialKeys.delete` table contains the names of keys that should delete the last character in an abbreviation in progress.
@@ -101,10 +99,6 @@ obj.defaults = {
 --- By default:
 --- ```
 --- TextExpansion.specialKeys = {
----   complete = {
----     "return", "space", "padenter", "tab",
----     ".", ",", ";", "/", "'",
----   },
 ---   reset = {
 ---     "escape", "help", "forwarddelete",
 ---     "left", "right", "up", "down",
@@ -116,10 +110,6 @@ obj.defaults = {
 --- }
 --- ```
 obj.specialKeys = {
-  complete = {
-    "return", "space", "padenter", "tab",
-    ".", ",", ";", "/", "'",
-  },
   reset = {
     "escape", "help", "forwarddelete",
     "left", "right", "up", "down",
