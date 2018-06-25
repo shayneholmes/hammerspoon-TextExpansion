@@ -422,4 +422,90 @@ function obj:setDebug(val)
   end
 end
 
+function obj:testPerformance(expansions, input)
+  assert(not obj:isEnabled(), "Object must not be enabled when running tests.")
+
+  -- parameters
+  local expansionsSizes = {
+    100,
+    1000,
+    10000,
+    100000,
+  }
+  local inputSizes = {
+    100,
+    1000,
+    10000,
+    100000,
+  }
+  local attempts = 5 -- smooth out benchmarking
+
+  -- mock
+  local originalExpansions = self.expansions
+  local originalGenerateKeystrokes = generateKeystrokes
+  generateKeystrokes = function() end
+
+  -- fixtures
+  for _, testExpansionsSize in pairs(expansionsSizes) do
+    local testExpansions = {}
+    for i=1,testExpansionsSize do
+      local key = ("abbreviation%d"):format(i)
+      local value = ("expansion%d"):format(i)
+      testExpansions[key] = value
+    end
+
+    self.expansions = testExpansions
+
+    -- init test
+    for _=1,attempts do
+      if self:isEnabled() then self:stop() end
+      local initStart = os.clock()
+      self:start()
+      local initEnd = os.clock()
+      print(("init, %d, %f"):format(
+        testExpansionsSize,
+        initEnd - initStart
+      ))
+    end
+
+    for _, testInputSize in pairs(inputSizes) do
+      local testInputBase = "test words "
+      local sizeSoFar = #testInputBase
+      local testInput = testInputBase
+      while sizeSoFar < testInputSize do
+        sizeSoFar = sizeSoFar * 2
+        testInput = testInput .. testInput
+      end
+      testInput = string.sub(testInput, 1, testInputSize)
+
+      -- input test
+      for _=1,attempts do
+        local inputStart = os.clock()
+
+        for i=1,#testInput do
+          local ev = {
+            getKeyCode = function() return " " end,
+            getCharacters = function() return testInput[i] end,
+            getFlags = function() return {cmd = false} end,
+          }
+          handleEvent(self, ev)
+        end
+
+        local inputEnd = os.clock()
+        print(("input, %d, %d, %f"):format(
+        testExpansionsSize,
+        testInputSize,
+        inputEnd - inputStart
+        ))
+      end
+    end
+    self:stop()
+
+  end
+
+  -- unmock
+  generateKeystrokes = originalGenerateKeystrokes
+  self.expansions = originalExpansions
+end
+
 return obj
