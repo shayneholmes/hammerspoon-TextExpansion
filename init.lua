@@ -427,12 +427,14 @@ function obj:testPerformance(expansions, input)
 
   -- parameters
   local expansionsSizes = {
+    10,
     100,
     1000,
     10000,
     100000,
   }
   local inputSizes = {
+    10,
     100,
     1000,
     10000,
