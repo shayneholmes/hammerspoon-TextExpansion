@@ -236,7 +236,7 @@ function obj:dfa(wordboundaries, internals, isEndChar)
     end
     local dfastate = {transitions = {}} -- dfastate.transitions[c] is a single set id
     for k,v in pairs(transitions) do
-      if nodes ~= internalroot and internals.transitions[k] then -- always evaluate starting new internals (only if we're not rooted in the internals node)
+      if nodes ~= internalroot and internals.transitions and internals.transitions[k] then -- always evaluate starting new internals (only if we're not rooted in the internals node)
         -- print(("Adding internal starter %s"):format(utf8.char(k)))
         v[#v+1] = internals.transitions[k]
       end
