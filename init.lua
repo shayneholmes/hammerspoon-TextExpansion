@@ -262,6 +262,42 @@ local function restartInactivityTimer()
   pendingTimer = doAfter(timeoutSeconds, function() resetAbbreviationTimeout() end)
 end
 
+local function getnextstate(cur, charcode)
+  local str = utf8.char(charcode)
+  if debug then print(("Char %s, code %s"):format(str,charcode)) end
+  local isCompletion = false -- true if this transition moves to a completion node
+  local nxt = dfa[cur].transitions[charcode] -- follow any valid transitions
+  if nxt == nil then -- no valid transitions
+    if isEndChar(str) then
+      -- check original state for completions, otherwise reset
+      nxt = dfa[cur].transitions["_completion"]
+      if nxt == nil then
+        nxt = 1
+      else
+        isCompletion = true -- go straight to word boundary state after this
+      end
+    else
+      nxt = dfa[2].transitions[charcode] or 2 -- to internals
+    end
+  end
+  if debug then print(( "%d -> %s -> %d" ):format(cur, str, nxt)) end
+
+  return nxt, isCompletion
+end
+
+local function processexpansion(expansion)
+  if not expansion then return end
+  if not expansion.waitforcompletionkey -- the key event we're holding now is part of the abbreviation, it should stick with the abbreviation
+    and not expansion.backspace -- if we were backspacing, the abbreviation wouldn't be around to be examined
+    and expansion.sendcompletionkey -- if we weren't sending it, the order wouldn't matter, now would it?
+  then
+    -- give time for the other event to be processed first
+    doAfter(0, function() generateKeystrokes(expansion) end)
+  else
+    generateKeystrokes(expansion)
+  end
+end
+
 local function handleEvent(self, ev)
   restartInactivityTimer()
 
@@ -279,50 +315,20 @@ local function handleEvent(self, ev)
   else
     local state = states:getHead() or 1
     local s = ev:getCharacters()
-    if s then -- follow transition to next state
-      local isCompletion = false -- true if this transition moves to a completion node
-      local nextstate = state
-      for p, c in utf8.codes(s) do -- follow any valid transitions
-        if nextstate ~= nil then nextstate = dfa[state].transitions[c] end
-      end
-      if nextstate == nil then -- no valid transitions
-        if isEndChar(s) then -- check original state for completions, otherwise reset
-          nextstate = dfa[state].transitions["_completion"]
-          if nextstate == nil then
-            nextstate = 1
-          else
-            isCompletion = true -- go straight to word boundary state after this
-          end
-        else
-          nextstate = dfa[2].transitions[c] or 2 -- to internals
-        end
-      end
-      for p, c in utf8.codes(s) do
+    if s then -- follow transitions to next state
+      for p, c in utf8.codes(s) do -- might be multiple chars, e.g. when deadkeys are enabled
+        local isCompletion
+        state, isCompletion = getnextstate(state, c)
         buffer:push(c)
-      end
-      states:push(nextstate)
-      if debug then print(( "%d -> %s -> %d" ):format(state, s, nextstate)) end
-      local expansion = getMatchingExpansion(nextstate)
-      if expansion then
-        if not expansion.sendcompletionkey then
-          eatAction = true
+        states:push(state)
+        local expansion = getMatchingExpansion(state)
+        if expansion then
+          debugTable(expansion)
+          processexpansion(expansion)
+          eatAction = eatAction or not expansion.sendcompletionkey -- true if any are true
+          if expansion.resetrecognizer then resetAbbreviation() end
+          if isCompletion then states:push(1) end -- reset after completions
         end
-        if not expansion.waitforcompletionkey -- the key event we're holding now is part of the abbreviation, it should stick with the abbreviation
-          and not expansion.backspace -- if we were backspacing, the abbreviation wouldn't be around to be examined
-          and expansion.sendcompletionkey -- if we weren't sending it, the order wouldn't matter, now would it?
-          then
-          -- give time for the other event to be processed first
-          doAfter(0, function() generateKeystrokes(expansion) end)
-        else
-          generateKeystrokes(expansion)
-        end
-        debugTable(expansion)
-        if expansion.resetrecognizer then
-          resetAbbreviation()
-        end
-      end
-      if isCompletion then
-        states:push(1) -- reset after completions
       end
     end
   end
