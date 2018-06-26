@@ -125,7 +125,7 @@ local function print_helper(trie, depth)
     return
   end
   local preface = string.rep("-", depth)
-  for key, val in pairs(trie.expansions or {}) do
+  for _, val in pairs(trie.expansions or {}) do
     local out = val
     if type(out) == "table" then out = out.expansion end
     print(("%sEXPANSION: %s"):format(preface,out))
@@ -177,7 +177,8 @@ local function getsetnumber(nodecollection)
 end
 
 function obj:printdfa(dfa)
-  for i,state in pairs(dfa) do
+  for i=1,#dfa do
+    local state = dfa[i]
     for _,x in pairs(state.expansions or {}) do
       if type(x) == "table" then
         x = x.expansion
@@ -200,9 +201,12 @@ end
 local function combinenodes(nodes, wordboundaries, internals, isEndChar)
   local expansions = {}
   local transitions = {} -- transitions[c] is the set of trie nodes that c goes to
-  for _,node in pairs(nodes) do
-    for k,v in pairs(node.expansions or {}) do
-      expansions[#expansions+1] = v
+  for i=1,#nodes do
+    local node = nodes[i]
+    if node.expansions then
+      for j=1,#node.expansions do
+        expansions[#expansions+1] = node.expansions[j]
+      end
     end
     for k,v in pairs(node.transitions or {}) do
       local key = k
