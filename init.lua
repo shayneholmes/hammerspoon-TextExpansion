@@ -262,27 +262,27 @@ local function restartInactivityTimer()
   pendingTimer = doAfter(timeoutSeconds, function() resetAbbreviationTimeout() end)
 end
 
-local function getnextstate(cur, charcode)
+local function getnextstate(currentstate, charcode)
   local str = utf8.char(charcode)
   if debug then print(("Char %s, code %s"):format(str,charcode)) end
   local isCompletion = false -- true if this transition moves to a completion node
-  local nxt = dfa[cur].transitions[charcode] -- follow any valid transitions
-  if nxt == nil then -- no valid transitions
+  local nextstate = dfa[currentstate].transitions[charcode] -- follow any valid transitions
+  if nextstate == nil then -- no valid transitions
     if isEndChar(str) then
       -- check original state for completions, otherwise reset
-      nxt = dfa[cur].transitions[trie.COMPLETION]
-      if nxt == nil then
-        nxt = trie.WORDBOUNDARY_NODE
+      nextstate = dfa[currentstate].transitions[trie.COMPLETION]
+      if nextstate == nil then
+        nextstate = trie.WORDBOUNDARY_NODE
       else
         isCompletion = true -- go straight to word boundary state after this
       end
     else
-      nxt = dfa[trie.INTERNAL_NODE].transitions[charcode] or trie.INTERNAL_NODE -- to internals
+      nextstate = dfa[trie.INTERNAL_NODE].transitions[charcode] or trie.INTERNAL_NODE -- to internals
     end
   end
-  if debug then print(( "%d -> %s -> %d" ):format(cur, str, nxt)) end
+  if debug then print(( "%d -> %s -> %d" ):format(currentstate, str, nextstate)) end
 
-  return nxt, isCompletion
+  return nextstate, isCompletion
 end
 
 local function processexpansion(expansion)
