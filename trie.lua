@@ -76,18 +76,26 @@ obj.WORDBOUNDARY_NODE = 1
 obj.INTERNAL_NODE = 2
 obj.COMPLETION = "_completion"
 
+local lasttrienode = 0 -- counter so nodes have values
+
+function newnode()
+  lasttrienode = lasttrienode + 1
+  node = {value = lasttrienode}
+  return node
+end
+
 function createtransition(node,k)
   if k == nil then return end
   if node.transitions == nil then node.transitions = {} end
-  if node.transitions[k] == nil then node.transitions[k] = {} end
+  if node.transitions[k] == nil then node.transitions[k] = newnode() end
   return node.transitions[k]
 end
 
 local print_trie
 
 function obj:createtries(expansions)
-  local wordboundary = {}
-  local internals = {}
+  local wordboundary = newnode()
+  local internals = newnode()
   for abbr,exp in pairs(expansions) do
     -- add each abbreviation to the appropriate trie with exp at its leaf
     if debug then print(("Inserting abbreviation %s with expansion %s"):format(abbr, exp)) end
@@ -141,13 +149,18 @@ local lastset
 local definitions
 
 local function getkey(nodecollection)
+  -- each node has a "value" key that is numeric and unique
+  -- this function returns a value unique and consistent for a set of nodes
   local ids = {}
   for k,v in pairs(nodecollection) do
-    ids[#ids+1] = ("%s"):format(v) -- "table:0x0000"
+    ids[#ids+1] = v.value
   end
   table.sort(ids)
-  local key = table.concat(ids,",")
-  if debug then print(("This node's key: %s"):format(key)) end
+  local key = 0
+  for k,v in pairs(ids) do
+    key = key * lasttrienode + v
+  end
+  if debug then print(("This node's key: %d"):format(key)) end
   return key
 end
 
