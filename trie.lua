@@ -156,11 +156,7 @@ local function getkey(nodecollection)
     ids[#ids+1] = v.value
   end
   table.sort(ids)
-  local key = 0
-  for k,v in pairs(ids) do
-    key = key * lasttrienode + v
-  end
-  if debug then print(("This node's key: %d"):format(key)) end
+  local key = table.concat(ids, ":")
   return key
 end
 
@@ -174,9 +170,9 @@ local function getsetnumber(nodecollection)
     lastset = lastset + 1
     set = lastset
     definitions[key] = set
-    -- print(("Adding new set %d for key '%s'"):format(set,key))
+    if debug then print(("New node's key: %s"):format(key)) end
   else
-    -- print(("Reusing set %d for key '%s'"):format(set,key))
+    if debug then print(("Reused node's key: %s"):format(key)) end
   end
   -- print(("Returning %s, %s"):format(set,new))
   return set, new
