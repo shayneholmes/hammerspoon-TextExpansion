@@ -270,14 +270,14 @@ local function getnextstate(cur, charcode)
   if nxt == nil then -- no valid transitions
     if isEndChar(str) then
       -- check original state for completions, otherwise reset
-      nxt = dfa[cur].transitions["_completion"]
+      nxt = dfa[cur].transitions[trie.COMPLETION]
       if nxt == nil then
-        nxt = 1
+        nxt = trie.WORDBOUNDARY_NODE
       else
         isCompletion = true -- go straight to word boundary state after this
       end
     else
-      nxt = dfa[2].transitions[charcode] or 2 -- to internals
+      nxt = dfa[trie.INTERNAL_NODE].transitions[charcode] or trie.INTERNAL_NODE -- to internals
     end
   end
   if debug then print(( "%d -> %s -> %d" ):format(cur, str, nxt)) end
@@ -313,7 +313,7 @@ local function handleEvent(self, ev)
     buffer:pop()
     states:pop()
   else
-    local state = states:getHead() or 1
+    local state = states:getHead() or trie.WORDBOUNDARY_NODE
     for p, c in utf8.codes(ev:getCharacters()) do -- might be multiple chars, e.g. when deadkeys are enabled
       local isCompletion
       state, isCompletion = getnextstate(state, c)
@@ -325,7 +325,7 @@ local function handleEvent(self, ev)
         processexpansion(expansion)
         eatAction = eatAction or not expansion.sendcompletionkey -- true if any are true
         if expansion.resetrecognizer then resetAbbreviation() end
-        if isCompletion then states:push(1) end -- reset after completions
+        if isCompletion then states:push(trie.WORDBOUNDARY_NODE) end -- reset after completions
       end
     end
   end
@@ -339,7 +339,7 @@ local function init(self)
   timeoutSeconds = self.timeoutSeconds
   buffer = circularbuffer.new(maxAbbreviationLength)
   states = circularbuffer.new(maxStatesUndo)
-  states:push(1) -- start in root set
+  states:push(trie.WORDBOUNDARY_NODE) -- start in root set
   dfa = trie:createdfa(expansions, isEndChar)
   if debug then trie:printdfa(dfa) end
   resetAbbreviation()

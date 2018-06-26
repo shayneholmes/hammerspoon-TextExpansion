@@ -72,6 +72,10 @@ end
 
 obj = {}
 
+obj.WORDBOUNDARY_NODE = 1
+obj.INTERNAL_NODE = 2
+obj.COMPLETION = "_completion"
+
 function createtransition(node,k)
   if k == nil then return end
   if node.transitions == nil then node.transitions = {} end
@@ -98,7 +102,7 @@ function obj:createtries(expansions)
       cur = createtransition(cur, c)
     end
     if exp.waitforcompletionkey then
-      cur = createtransition(cur, "_completion")
+      cur = createtransition(cur, self.COMPLETION)
     end
     if cur.expansions == nil then cur.expansions = {} end
     cur.expansions[#cur.expansions + 1] = exp
@@ -192,8 +196,8 @@ function obj:dfa(wordboundaries, internals, isEndChar)
   local internalroot = { internals }
   queue:pushright(boundaryroot) -- seed the root node
   queue:pushright(internalroot) -- seed the internals node
-  getsetnumber(boundaryroot) -- always gets #1
-  getsetnumber(internalroot) -- always gets #2
+  getsetnumber(boundaryroot) -- always gets #1 (self.WORDBOUNDARY_NODE)
+  getsetnumber(internalroot) -- always gets #2 (self.INTERNAL_NODE)
   while not queue:empty() do
     local nodes = queue:popleft()
     local activeset = getsetnumber(nodes)
