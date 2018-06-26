@@ -198,6 +198,58 @@ function obj:printdfa(dfa)
   end
 end
 
+-- Combine all expansions and transitions from the indicated nodes
+--
+-- Factor in internal and wordboundaries; they're included in the resulting combined transitions.
+local function combinenodes(nodes, wordboundaries, internals, isEndChar)
+  local expansions = {}
+  local transitions = {} -- transitions[c] is the set of trie nodes that c goes to
+  for _,node in pairs(nodes) do
+    for k,v in pairs(node.expansions or {}) do
+      -- print("Expansion; skipping")
+      expansions[#expansions+1] = v
+    end
+    for k,v in pairs(node.transitions or {}) do
+      local key = k
+      if type(key) == "number" then
+        key = utf8.char(key)
+      end
+      if not transitions[k] then
+        if node ~= internals and internals.transitions and internals.transitions[k] then
+          -- evaluate starting new internals with the transition
+          transitions[k] = { internals.transitions[k] }
+        else
+          transitions[k] = {}
+        end
+      end
+      transitions[k][#transitions[k]+1] = v
+      if isEndChar(key) then -- the root node is in this set
+        if debug then print(("End char %s (%s)"):format(key,k)) end
+        transitions[k][#transitions[k]+1] = wordboundaries
+      end
+    end
+  end
+  return expansions, transitions
+end
+
+local function generatedfastate(expansions, transitions, queue)
+  local dfastate = {transitions = {}} -- dfastate.transitions[c] is a single set id
+  for k,v in pairs(transitions) do
+    local setnumber, new = getsetnumber(v)
+    -- print(("Got %s, %s"):format(setnumber,new))
+    dfastate.transitions[k] = setnumber
+    -- if new, add it to the queue
+    if new then
+      -- print(("Adding set %d to queue"):format(setnumber))
+      queue:pushright(v)
+    end
+  end
+  if #expansions > 0 then
+    dfastate.expansions = expansions
+  end
+  return dfastate
+end
+
 function obj:dfa(wordboundaries, internals, isEndChar)
   local dfasets = {} -- dfasets[i] is a table containing characters containing set IDs
   lastset = 0
@@ -211,49 +263,9 @@ function obj:dfa(wordboundaries, internals, isEndChar)
   getsetnumber(internalroot) -- always gets #2 (self.INTERNAL_NODE)
   while not queue:empty() do
     local nodes = queue:popleft()
+    local expansions, transitions = combinenodes(nodes, wordboundaries, internals, isEndChar)
+    local dfastate = generatedfastate(expansions, transitions, queue)
     local activeset = getsetnumber(nodes)
-    -- print(("Considering set %s"):format(getkey(nodes)))
-    local expansions = {}
-    local transitions = {} -- transitions[c] is the set of trie nodes that c goes to
-    for _,node in pairs(nodes) do
-      for k,v in pairs(node.expansions or {}) do
-        -- print("Expansion; skipping")
-        expansions[#expansions+1] = v
-      end
-      for k,v in pairs(node.transitions or {}) do
-        local key = k
-        if type(key) == "number" then
-          key = utf8.char(key)
-        end
-        -- print(("Adding transition %s"):format(key))
-        if not transitions[k] then
-          transitions[k] = {}
-        end
-        transitions[k][#transitions[k]+1] = v
-        if isEndChar(key) then -- the root node is in this set
-          if debug then print(("End char %s (%s)"):format(key,k)) end
-          transitions[k][#transitions[k]+1] = wordboundaries
-        end
-      end
-    end
-    local dfastate = {transitions = {}} -- dfastate.transitions[c] is a single set id
-    for k,v in pairs(transitions) do
-      if nodes ~= internalroot and internals.transitions and internals.transitions[k] then -- always evaluate starting new internals (only if we're not rooted in the internals node)
-        -- print(("Adding internal starter %s"):format(utf8.char(k)))
-        v[#v+1] = internals.transitions[k]
-      end
-      local setnumber, new = getsetnumber(v)
-      -- print(("Got %s, %s"):format(setnumber,new))
-      dfastate.transitions[k] = setnumber
-      -- if new, add it to the queue
-      if new then
-        -- print(("Adding set %d to queue"):format(setnumber))
-        queue:pushright(v)
-      end
-    end
-    if #expansions > 0 then
-      dfastate.expansions = expansions
-    end
     dfasets[activeset] = dfastate
   end
   definitions = nil
