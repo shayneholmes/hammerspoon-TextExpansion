@@ -182,7 +182,7 @@ local function printStateHistory()
   print(("States: %s"):format(table.concat(states:getAll(),",")))
 end
 
-local endChars = " \r\n\t;:(){},"
+local endChars = "\"' \r\n\t;:(){},@="
 
 local function isEndChar(char)
   return endChars:find(char, 1, 1) ~= nil
