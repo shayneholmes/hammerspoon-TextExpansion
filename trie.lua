@@ -147,6 +147,7 @@ end
 
 local lastset
 local definitions
+local biggestkey = ""
 
 local function getkey(nodecollection)
   -- each node has a "value" key that is numeric and unique
@@ -157,6 +158,7 @@ local function getkey(nodecollection)
   end
   table.sort(ids)
   local key = table.concat(ids, ":")
+  if #key > #biggestkey then biggestkey = key end
   return key
 end
 
@@ -255,6 +257,8 @@ function obj:dfa(wordboundaries, internals, isEndChar)
     dfasets[activeset] = dfastate
   end
   definitions = nil
+  if debug then print(("Biggest key: %s"):format(biggestkey)) end
+  if debug then print(("Nodes: %s"):format(#dfasets)) end
   return dfasets
 end
 
