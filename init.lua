@@ -314,21 +314,18 @@ local function handleEvent(self, ev)
     states:pop()
   else
     local state = states:getHead() or 1
-    local s = ev:getCharacters()
-    if s then -- follow transitions to next state
-      for p, c in utf8.codes(s) do -- might be multiple chars, e.g. when deadkeys are enabled
-        local isCompletion
-        state, isCompletion = getnextstate(state, c)
-        buffer:push(c)
-        states:push(state)
-        local expansion = getMatchingExpansion(state)
-        if expansion then
-          debugTable(expansion)
-          processexpansion(expansion)
-          eatAction = eatAction or not expansion.sendcompletionkey -- true if any are true
-          if expansion.resetrecognizer then resetAbbreviation() end
-          if isCompletion then states:push(1) end -- reset after completions
-        end
+    for p, c in utf8.codes(ev:getCharacters()) do -- might be multiple chars, e.g. when deadkeys are enabled
+      local isCompletion
+      state, isCompletion = getnextstate(state, c)
+      buffer:push(c)
+      states:push(state)
+      local expansion = getMatchingExpansion(state)
+      if expansion then
+        debugTable(expansion)
+        processexpansion(expansion)
+        eatAction = eatAction or not expansion.sendcompletionkey -- true if any are true
+        if expansion.resetrecognizer then resetAbbreviation() end
+        if isCompletion then states:push(1) end -- reset after completions
       end
     end
   end
