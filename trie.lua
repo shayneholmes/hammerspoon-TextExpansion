@@ -153,8 +153,8 @@ local function getkey(nodecollection)
   -- each node has a "value" key that is numeric and unique
   -- this function returns a value unique and consistent for a set of nodes
   local ids = {}
-  for k,v in pairs(nodecollection) do
-    ids[#ids+1] = v.value
+  for i=1,#nodecollection do
+    ids[#ids+1] = nodecollection[i].value
   end
   table.sort(ids)
   local key = table.concat(ids, ":")
