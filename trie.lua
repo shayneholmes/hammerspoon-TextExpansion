@@ -166,17 +166,13 @@ local function getsetnumber(nodecollection)
   -- add it if necessary
   local key = getkey(nodecollection)
   local set = definitions[key]
-  local new = false
-  if not set then -- it's new, add it
-    new = true
+  local new = not set
+  if new then -- add it
     lastset = lastset + 1
     set = lastset
     definitions[key] = set
     if debug then print(("New node's key: %s"):format(key)) end
-  else
-    if debug then print(("Reused node's key: %s"):format(key)) end
   end
-  -- print(("Returning %s, %s"):format(set,new))
   return set, new
 end
 
@@ -206,7 +202,6 @@ local function combinenodes(nodes, wordboundaries, internals, isEndChar)
   local transitions = {} -- transitions[c] is the set of trie nodes that c goes to
   for _,node in pairs(nodes) do
     for k,v in pairs(node.expansions or {}) do
-      -- print("Expansion; skipping")
       expansions[#expansions+1] = v
     end
     for k,v in pairs(node.transitions or {}) do
@@ -236,11 +231,9 @@ local function generatedfastate(expansions, transitions, queue)
   local dfastate = {transitions = {}} -- dfastate.transitions[c] is a single set id
   for k,v in pairs(transitions) do
     local setnumber, new = getsetnumber(v)
-    -- print(("Got %s, %s"):format(setnumber,new))
     dfastate.transitions[k] = setnumber
-    -- if new, add it to the queue
     if new then
-      -- print(("Adding set %d to queue"):format(setnumber))
+      -- add it to the queue
       queue:pushright(v)
     end
   end
