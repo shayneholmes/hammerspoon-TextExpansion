@@ -443,7 +443,7 @@ function obj:testPerformance(expansions, input)
     10000,
     100000,
   }
-  local attempts = 5 -- smooth out benchmarking
+  local attempts = 10 -- smooth out benchmarking
 
   -- mock
   local originalExpansions = self.expansions
@@ -474,7 +474,7 @@ function obj:testPerformance(expansions, input)
     end
 
     for _, testInputSize in pairs(inputSizes) do
-      local testInputBase = "test words "
+      local testInputBase = "abbreviation2 abbreviation and a bunch of words that don't make it very far down the state machine"
       local sizeSoFar = #testInputBase
       local testInput = testInputBase
       while sizeSoFar < testInputSize do
@@ -487,14 +487,14 @@ function obj:testPerformance(expansions, input)
       for _=1,attempts do
         local inputStart = os.clock()
 
-        for i=1,#testInput do
+        string.gsub(testInput, ".", function(char)
           local ev = {
             getKeyCode = function() return " " end,
-            getCharacters = function() return testInput[i] end,
+            getCharacters = function() return char end,
             getFlags = function() return {cmd = false} end,
           }
           handleEvent(self, ev)
-        end
+        end)
 
         local inputEnd = os.clock()
         print(("input, %d, %d, %f"):format(
