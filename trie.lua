@@ -91,7 +91,30 @@ local function createtransition(node,k)
   return node.transitions[k]
 end
 
-local print_trie
+local function print_helper(trie, depth)
+  if trie == nil then
+    return
+  end
+  local preface = string.rep("-", depth)
+  for _, val in pairs(trie.expansions or {}) do
+    local out = val
+    if type(out) == "table" then out = out.expansion end
+    print(("%sEXPANSION: %s"):format(preface,out))
+  end
+  for key, val in pairs(trie.transitions or {}) do
+    local label = key
+    if type(label) == "number" then
+      label = utf8.char(label)
+    end
+    print(("%s%s"):format(preface,label))
+    print_helper(val, depth + 1)
+  end
+end
+
+local print_trie = function(trie)
+  print("Printing trie...")
+  print_helper(trie, 0)
+end
 
 function obj:createtries(expansions)
   local wordboundary = newnode()
@@ -118,31 +141,6 @@ function obj:createtries(expansions)
   if debug then print("Word boundaries:") print_trie(wordboundary) end
   if debug then print("Internals") print_trie(internals) end
   return wordboundary, internals
-end
-
-local function print_helper(trie, depth)
-  if trie == nil then
-    return
-  end
-  local preface = string.rep("-", depth)
-  for _, val in pairs(trie.expansions or {}) do
-    local out = val
-    if type(out) == "table" then out = out.expansion end
-    print(("%sEXPANSION: %s"):format(preface,out))
-  end
-  for key, val in pairs(trie.transitions or {}) do
-    local label = key
-    if type(label) == "number" then
-      label = utf8.char(label)
-    end
-    print(("%s%s"):format(preface,label))
-    print_helper(val, depth + 1)
-  end
-end
-
-print_trie = function(trie)
-  print("Printing trie...")
-  print_helper(trie, 0)
 end
 
 local lastset
