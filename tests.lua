@@ -1,6 +1,6 @@
 local obj = {}
 
-local counter = function() -- closure
+local counter = function() -- closure for function tests
   local counter = 0
   return function()
     counter = counter + 1 return ("%s"):format(counter)
@@ -29,15 +29,20 @@ local settings = {
     expansions = {btw = "by the way"},
     cases = {
       { title = "in conversation",
-        input = "btw, how are you?", expected = "by the way, how are you?" }
+        input = "btw, how are you?", expected = "by the way, how are you?" },
     }
   },
   {
-    title = "function",
-    expansions = {func = counter()},
+    title = "functions",
+    expansions = {
+      counter = counter(),
+      simple = function() return "output" end,
+    },
     cases = {
-      { title = "multiple times",
-        input = "func func func ", expected = "1 2 3 " }
+      { title = "function is called",
+        input = "simple ", expected = "output " },
+      { title = "function is called each time it's referenced",
+        input = "counter counter counter ", expected = "1 2 3 " },
     }
   },
   {
