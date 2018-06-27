@@ -78,13 +78,13 @@ obj.COMPLETION = "_completion"
 
 local lasttrienode = 0 -- counter so nodes have values
 
-function newnode()
+local function newnode()
   lasttrienode = lasttrienode + 1
   node = {value = lasttrienode}
   return node
 end
 
-function createtransition(node,k)
+local function createtransition(node,k)
   if k == nil then return end
   if node.transitions == nil then node.transitions = {} end
   if node.transitions[k] == nil then node.transitions[k] = newnode() end
