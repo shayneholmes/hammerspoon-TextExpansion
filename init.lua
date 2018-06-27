@@ -182,7 +182,7 @@ local function printBuffer()
   print(("Buffer: %s"):format(utf8.char(table.unpack(buffer:getAll()))))
 end
 
-local endChars = "\"' \r\n\t;:(){},@="
+local endChars = "-@()[]{}:;'\"/\,.?!\r\n \t"
 
 local function isEndChar(char)
   return endChars:find(char, 1, 1) ~= nil
