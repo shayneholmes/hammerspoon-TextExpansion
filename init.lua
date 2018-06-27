@@ -249,6 +249,11 @@ local function restartInactivityTimer()
   pendingTimer = doAfter(timeoutSeconds, function() resetAbbreviationTimeout() end)
 end
 
+local function hydrateexpansion(x)
+  x.trigger = getAbbreviation(x)
+  x.output = evaluateExpansion(x)
+end
+
 local function processexpansion(expansion)
   if not expansion then return end
   if not expansion.waitforcompletionkey -- the key event we're holding now is part of the abbreviation, it should stick with the abbreviation
@@ -282,10 +287,7 @@ local function handleEvent(self, ev)
       statemanager:followedge(c)
       local expansion = statemanager:getMatchingExpansion()
       if expansion then
-        -- TODO: Refactor
-        expansion.trigger = getAbbreviation(expansion)
-        expansion.output = evaluateExpansion(expansion)
-        -- end TODO
+        hydrateexpansion(expansion)
         debugTable(expansion)
         processexpansion(expansion)
         eatAction = eatAction or not expansion.sendcompletionkey -- true if any are true
