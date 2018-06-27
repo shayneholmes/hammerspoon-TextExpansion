@@ -190,7 +190,7 @@ end
 
 local function evaluateExpansion(expansion)
   -- place the result in output
-  output = expansion.expansion
+  local output = expansion.expansion
   if type(output) == "function" then
     local _, result = pcall(output)
     if not _ then
