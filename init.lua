@@ -64,13 +64,13 @@ obj.expansions = {}
 --- TextExpansion.defaults
 --- Variable
 --- Table containing options to be applied to expansions by default. The following keys are valid:
---- * **backspace** (default true): Use backspaces to remove the abbreviation when it is expanded.
---- * **casesensitive** (default false): Case of abbreviation must match exactly
---- * **internal** (default false): Trigger the expansion even when the abbreviation is inside another word
---- * **matchcase** (default true): If you type an abbreviation in `ALL CAPS` or `FirstCaps`, the expansion will be typed in the same manner; ignored when `casesensitive` is set
---- * **resetrecognizer** (default false): When an abbreviation is completed, reset the recognizer.
---- * **sendcompletionkey** (default true): When an abbreviation is completed, send the completion key along with it.
---- * **waitforcompletionkey** (default true): Wait for a completion key before expanding the abbreviation.
+--- * **`backspace`** (default true): Use backspaces to remove the abbreviation when it is expanded.
+--- * **`casesensitive`** (default false): Case of abbreviation must match exactly
+--- * **`internal`** (default false): Trigger the expansion even when the abbreviation is inside another word
+--- * **`matchcase`** (default true): If you type an abbreviation in `ALL CAPS` or `FirstCaps`, the expansion will be typed in the same manner; ignored when `casesensitive` is set
+--- * **`resetrecognizer`** (default false): When an abbreviation is completed, reset the recognizer.
+--- * **`sendcompletionkey`** (default true): When an abbreviation is completed, send the completion key along with it.
+--- * **`waitforcompletionkey`** (default true): Wait for a completion key before expanding the abbreviation.
 obj.defaults = {
   backspace = true, -- remove the abbreviation
   casesensitive = false, -- case of abbreviation must match exactly
