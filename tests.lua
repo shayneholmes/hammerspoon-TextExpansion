@@ -19,6 +19,35 @@ local settings = {
         input = "btw, how are you?", expected = "by the way, how are you?" }
     }
   },
+  {
+    title = "completion keys",
+    expansions = {
+      earlycomplete = {
+        expansion = "Right away!",
+        waitforcompletionkey = false,
+        sendcompletionkey = true,
+      },
+      withoutcompletion = {
+        expansion = "Right away!",
+        waitforcompletionkey = false,
+        sendcompletionkey = false,
+      },
+      ban = {
+        expansion = "ana",
+        waitforcompletionkey = false,
+        sendcompletionkey = true,
+        backspace = false,
+      },
+    },
+    cases = {
+      { title = "includes completion key",
+        input = "earlycomplete", expected = "Right away!e" },
+      { title = "excludes completion key",
+        input = "withoutcompletion", expected = "Right away!" },
+      { title = "endkey ordering",
+        input = "ban", expected = "banana" },
+    }
+  },
 }
 
 function obj.runtests(TextExpansion)

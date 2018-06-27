@@ -517,7 +517,7 @@ function obj:runtest(expansions, input, expected, expectedDoAfters)
   assert(not obj:isEnabled(), "Object must not be enabled when running tests.")
 
   local output = ""
-  local doAfters = 0
+  local pendingDoAfter = nil
 
   -- setup
   local originalExpansions = self.expansions
@@ -537,7 +537,9 @@ function obj:runtest(expansions, input, expected, expectedDoAfters)
     new = function() return { stop = function() end, start = function() end } end,
     event = { types = { keyDown = nil } },
   }
-  doAfter = function() doAfters = doAfters + 1 end
+  doAfter = function(_, func)
+    pendingDoAfter = func
+  end
   restartInactivityTimer = function() end
 
   self:start()
@@ -553,12 +555,14 @@ function obj:runtest(expansions, input, expected, expectedDoAfters)
     if not eat then
       output = output .. char
     end
+    if pendingDoAfter then
+      pendingDoAfter()
+      pendingDoAfter = nil
+    end
   end)
 
   assert(expected == output,
     ("Output for input %s: Expected: %s, actual: %s"):format(input, expected, output))
-  assert((expectedDoAfters or 0) == doAfters,
-    ("doAfters for input %s: Expected: %s, actual: %s"):format(input, expectedDoAfters, doAfters))
 
   -- teardown
   self:stop()
