@@ -23,7 +23,9 @@ end
 obj.spoonPath = script_path()
 
 local circularbuffer = dofile(obj.spoonPath.."/circularbuffer.lua")
-local trie = dofile(obj.spoonPath.."/trie.lua")
+local Trie = dofile(obj.spoonPath.."/trie.lua")
+local DfaFactory = dofile(obj.spoonPath.."/dfa.lua")
+local StateManager = dofile(obj.spoonPath.."/statemanager.lua")
 
 -- Dependencies
 local eventtap = hs.eventtap
@@ -132,12 +134,12 @@ local maxStatesUndo = 10
 
 -- Internal variables
 local buffer
-local states
 local debug
+local trie
 local keyWatcher
 local keyActions -- generated on start() from specialKeys
 local expansions -- generated on start()
-local dfa -- generated on start()
+local statemanager -- generated on start()
 local abbreviation
 local pendingTimer
 local timeoutSeconds
@@ -176,15 +178,11 @@ end
 
 local function resetAbbreviation()
   buffer:clear()
-  states:clear()
+  statemanager:clear()
 end
 
 local function printBuffer()
   print(("Buffer: %s"):format(utf8.char(table.unpack(buffer:getAll()))))
-end
-
-local function printStateHistory()
-  print(("States: %s"):format(table.concat(states:getAll(),",")))
 end
 
 local endChars = "\"' \r\n\t;:(){},@="
@@ -213,20 +211,6 @@ local function getAbbreviation(x)
   local actual = utf8.char(table.unpack(buffer:getEnding(length)))
   if debug then print(("Abbreviation interpreted: %s -> %s"):format(x.abbreviation,actual)) end
   return actual
-end
-
-local function getMatchingExpansion(state)
-  local expansions = dfa[state].expansions
-  if expansions then
-    for _,x in pairs(expansions) do
-      if true then -- evaluate match
-        x.trigger = getAbbreviation(x)
-        x.output = evaluateExpansion(x)
-        return x
-      end
-    end
-  end
-  return nil
 end
 
 local function debugTable(table)
@@ -267,29 +251,6 @@ local function restartInactivityTimer()
   pendingTimer = doAfter(timeoutSeconds, function() resetAbbreviationTimeout() end)
 end
 
-local function getnextstate(currentstate, charcode)
-  local str = utf8.char(charcode)
-  if debug then print(("Char %s, code %s"):format(str,charcode)) end
-  local isCompletion = false -- true if this transition moves to a completion node
-  local nextstate = dfa[currentstate].transitions[charcode] -- follow any valid transitions
-  if nextstate == nil then -- no valid transitions
-    if isEndChar(str) then
-      -- check original state for completions, otherwise reset
-      nextstate = dfa[currentstate].transitions[trie.COMPLETION]
-      if nextstate == nil then
-        nextstate = trie.WORDBOUNDARY_NODE
-      else
-        isCompletion = true -- go straight to word boundary state after this
-      end
-    else
-      nextstate = dfa[trie.INTERNAL_NODE].transitions[charcode] or trie.INTERNAL_NODE -- to internals
-    end
-  end
-  if debug then print(( "%d -> %s -> %d" ):format(currentstate, str, nextstate)) end
-
-  return nextstate, isCompletion
-end
-
 local function processexpansion(expansion)
   if not expansion then return end
   if not expansion.waitforcompletionkey -- the key event we're holding now is part of the abbreviation, it should stick with the abbreviation
@@ -316,25 +277,25 @@ local function handleEvent(self, ev)
     resetAbbreviation()
   elseif keyAction == "delete" then -- delete the last character, go back to previous state
     buffer:pop()
-    states:pop()
+    statemanager:rewindstate()
   else
-    local state = states:getHead() or trie.WORDBOUNDARY_NODE
     for p, c in utf8.codes(ev:getCharacters()) do -- might be multiple chars, e.g. when deadkeys are enabled
-      local isCompletion
-      state, isCompletion = getnextstate(state, c)
       buffer:push(c)
-      states:push(state)
-      local expansion = getMatchingExpansion(state)
+      statemanager:followedge(c)
+      local expansion = statemanager:getMatchingExpansion()
       if expansion then
+        -- TODO: Refactor
+        expansion.trigger = getAbbreviation(expansion)
+        expansion.output = evaluateExpansion(expansion)
+        -- end TODO
         debugTable(expansion)
         processexpansion(expansion)
         eatAction = eatAction or not expansion.sendcompletionkey -- true if any are true
         if expansion.resetrecognizer then resetAbbreviation() end
-        if isCompletion then states:push(trie.WORDBOUNDARY_NODE) end -- reset after completions
       end
     end
   end
-  if debug then printBuffer() printStateHistory() end
+  if debug then printBuffer() end
   return eatAction
 end
 
@@ -343,10 +304,9 @@ local function init(self)
   generateExpansions(self)
   timeoutSeconds = self.timeoutSeconds
   buffer = circularbuffer.new(maxAbbreviationLength)
-  states = circularbuffer.new(maxStatesUndo)
-  states:push(trie.WORDBOUNDARY_NODE) -- start in root set
-  dfa = trie:createdfa(expansions, isEndChar)
-  if debug then trie:printdfa(dfa) end
+  local trieset = Trie.createtrieset(expansions, debug)
+  local dfa = DfaFactory.create(trieset, isEndChar, debug)
+  statemanager = StateManager.new(dfa, isEndChar, maxStatesUndo, debug)
   resetAbbreviation()
   keyWatcher = eventtap.new({ eventtap.event.types.keyDown }, function(ev) return handleEvent(self, ev) end)
 end
