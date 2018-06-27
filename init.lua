@@ -67,16 +67,15 @@ obj.expansions = {}
 --- * **backspace** (default true): Use backspaces to remove the abbreviation when it is expanded.
 --- * **casesensitive** (default false): Case of abbreviation must match exactly
 --- * **internal** (default false): Trigger the expansion even when the abbreviation is inside another word
+--- * **matchcase** (default true): If you type an abbreviation in `ALL CAPS` or `FirstCaps`, the expansion will be typed in the same manner; ignored when `casesensitive` is set
 --- * **resetrecognizer** (default false): When an abbreviation is completed, reset the recognizer.
 --- * **sendcompletionkey** (default true): When an abbreviation is completed, send the completion key along with it.
 --- * **waitforcompletionkey** (default true): Wait for a completion key before expanding the abbreviation.
--- Options still TODO
--- Expander:
---   matchcase = true, -- make expansion conform in case to the abbreviation (works only for first caps, all caps)
 obj.defaults = {
   backspace = true, -- remove the abbreviation
   casesensitive = false, -- case of abbreviation must match exactly
   internal = false, -- trigger even inside another word
+  matchcase = true, -- if you type an abbreviation in `ALL CAPS` or `FirstCaps`, the expansion will be typed in the same manner; ignored when `casesensitive` is set
   resetrecognizer = false, -- reset the recognizer after each completion
   sendcompletionkey = true, -- send the completion key
   waitforcompletionkey = true, -- wait for a completion key
@@ -249,9 +248,39 @@ local function restartInactivityTimer()
   pendingTimer = doAfter(timeoutSeconds, function() resetAbbreviationTimeout() end)
 end
 
+local function isallcaps(str)
+  return str:upper() == str and str:lower() ~= str
+end
+
+local function makeallcaps(str)
+  return str:upper()
+end
+
+local function isfirstcap(str)
+  return isallcaps(str:sub(1,1))
+end
+
+local function makefirstcap(str)
+  return str:sub(1,1):upper() .. str:sub(2)
+end
+
+-- modify output depending on trigger
+local function matchcase(trigger, output)
+  if isallcaps(trigger) then
+    return makeallcaps(output)
+  elseif isfirstcap(trigger) then
+    return makefirstcap(output)
+  else
+    return output
+  end
+end
+
 local function hydrateexpansion(x)
   x.trigger = getAbbreviation(x)
   x.output = evaluateExpansion(x)
+  if x.matchcase and not x.casesensitive then
+    x.output = matchcase(x.trigger, x.output)
+  end
 end
 
 local function processexpansion(expansion)

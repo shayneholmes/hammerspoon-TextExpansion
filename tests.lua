@@ -25,14 +25,6 @@ local settings = {
     }
   },
   {
-    title = "by the way",
-    expansions = {btw = "by the way"},
-    cases = {
-      { title = "in conversation",
-        input = "btw, how are you?", expected = "by the way, how are you?" },
-    }
-  },
-  {
     title = "functions",
     expansions = {
       counter = counter(),
@@ -154,7 +146,7 @@ local settings = {
       collision = "lower",
       Collision = {
         expansion = "upper",
-        casesensitive = "true",
+        casesensitive = true,
       },
     },
     cases = {
@@ -175,10 +167,62 @@ local settings = {
       },
       {
         title = "case insensitive trigger",
-        input = "CoLLiSiON ",
+        input = "coLLiSiON ",
         expected = "lower ",
       },
     },
+  },
+  {
+    title = "match case",
+    expansions = {
+      btw = {
+        expansion = "by the way",
+        matchcase = true,
+      },
+      CASESENSITIVE = {
+        expansion = "case sensitive",
+        matchcase = true,
+        casesensitive = true,
+      },
+      [ "8ball" ] = {
+        expansion = "eight ball",
+        matchcase = true,
+      },
+      eightyfour = {
+        expansion = "8-four",
+        matchcase = true,
+      },
+      name = {
+        expansion = "Jefferson",
+        matchcase = true,
+      },
+    },
+    cases = {
+      { title = "first caps",
+        input = "Hey. Btw, how are you?", expected = "Hey. By the way, how are you?" },
+      { title = "all caps",
+        input = "Hey. BTW, how are you?", expected = "Hey. BY THE WAY, how are you?" },
+      { title = "first and others caps",
+        input = "Hey. BTw, how are you?", expected = "Hey. By the way, how are you?" },
+      { title = "not first but others",
+        input = "Hey. bTW, how are you?", expected = "Hey. by the way, how are you?" },
+      { title = "ignored b/c case sensitive",
+        input = "CASESENSITIVE ", expected = "case sensitive " },
+      { title = "first cap doesn't work b/c it's a number",
+        input = "8Ball ", expected = "eight ball " },
+      { title = "all caps works with first number",
+        input = "8BALL ", expected = "EIGHT BALL " },
+      { title = "can't capitalize first char",
+        input = "Eightyfour ", expected = "8-four " },
+      { title = "can capitalize the rest",
+        input = "EIGHTYFOUR ", expected = "8-FOUR " },
+      { title = "name not affected when small",
+        input = "name ", expected = "Jefferson " },
+      { title = "name not affected by firstcap",
+        input = "Name ", expected = "Jefferson " },
+      { title = "name gets all caps",
+        input = "NAME ", expected = "JEFFERSON " },
+    }
   },
 }
 
