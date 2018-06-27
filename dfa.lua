@@ -55,7 +55,7 @@ function Dfa:followedge(charcode)
   if self.debug then print(("Char %s, code %s"):format(str,charcode)) end
   local nextstate = self.dfa[self.state].transitions[charcode] -- follow any valid transitions
   if nextstate == nil then -- no valid transitions
-    if self.isEndChar(str) then
+    if self.isEndChar(charcode) then
       -- check original state for completions, otherwise reset
       nextstate = self.dfa[self.state].transitions[Trie.COMPLETION]
       if nextstate == nil then

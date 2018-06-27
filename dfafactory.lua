@@ -110,7 +110,7 @@ function DfaFactory:combinenodes(nodes)
         end
       end
       transitions[k][#transitions[k]+1] = v
-      if self.isEndChar(key) then -- also consider word boundaries starting here
+      if self.isEndChar(k) then -- also consider word boundaries starting here
         if self.debug then print(("End char %s (%s)"):format(key,k)) end
         transitions[k][#transitions[k]+1] = self.wordboundary
       end

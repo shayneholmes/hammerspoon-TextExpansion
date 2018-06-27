@@ -182,10 +182,15 @@ local function printBuffer()
   print(("Buffer: %s"):format(utf8.char(table.unpack(buffer:getAll()))))
 end
 
-local endChars = "-@()[]{}:;'\"/\,.?!\r\n \t"
+local endChars = "-@()[]{}:;'\"/\\,.?!\r\n \t"
 
-local function isEndChar(char)
-  return endChars:find(char, 1, 1) ~= nil
+local endCharsArray = {}
+for _,code in utf8.codes(endChars) do
+  endCharsArray[code] = true
+end
+
+local function isEndChar(code)
+  return endCharsArray[code]
 end
 
 local function evaluateExpansion(expansion)
