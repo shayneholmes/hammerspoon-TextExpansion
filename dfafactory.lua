@@ -140,7 +140,7 @@ function DfaFactory.create(trieset, isEndChar, debug)
   assert(trieset and trieset.wordboundary and trieset.internals, "Trie set must have word boundaries and internals.")
   assert(isEndChar, "Must pass in a function to identify end characters")
 
-  self = {
+  local self = {
     debug = not not debug,
     getnextsetnumber = makeCounter(),
     states = {}, -- states[i] for i=1,n is a table containing set ID values, keyed by characters

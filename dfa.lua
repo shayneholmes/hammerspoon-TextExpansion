@@ -70,7 +70,7 @@ function Dfa.new(states, isEndChar, maxStatesUndo, debug)
   assert(states, "Must provide states")
   assert(isEndChar, "Must pass in a function to identify end characters")
   assert(maxStatesUndo, "Must pass in a number of states to save")
-  self = {
+  local self = {
     debug = not not debug,
     dfa = states,
     isEndChar = isEndChar,
