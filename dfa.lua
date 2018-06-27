@@ -1,30 +1,11 @@
--- Make a deterministic finite automaton (DFA) out of tries representing an NFA
+-- Use a provided DFA to manage state and report back any expansions that
+-- are in the active state
 
--- The output is a table of states, where each state has:
--- - transitions: a table wherein each subelement has:
---   - key: a UTF-8 character code describing the edge
---   - value: the state the edge leads to
--- - expansions: a list of expansions at this state
+Dfa = {}
+Dfa.__index = Dfa
 
--- Each expansion is included in the DFA only once, at the end state described
--- by its abbreviation.
-
--- Two of the states are special:
--- - State DfaFactory.WORDBOUNDARY_NODE is the root of the tree after a word
---   boundary. After a completion event, the state should be reset to this node.
--- - State DfaFactory.INTERNAL_NODE is the root state for "internal"
---   abbreviations; that is, they can occur anywhere in a word. If a transition
---   for a given node isn't found, this state should be checked as well.
-
--- Note: Internal abbreviation starts are included alongside other nodes, but
--- only when they intersect with existing transitions. For example: with three
--- abbreviations "abc", "bad" (internal) and "cab" (internal), "bad" would be
--- included in the "a" -> b transition, but "cab" would not, because "a" -> c
--- doesn't exist. When the transition isn't found, the caller needs to check
--- the internal transitions as well.
-
-DfaFactory = {}
-DfaFactory.__index = DfaFactory
+Dfa.WORDBOUNDARY_NODE = 1
+Dfa.INTERNAL_NODE = 2
 
 local function script_path()
   local str = debug.getinfo(2, "S").source:sub(2)
@@ -32,146 +13,73 @@ local function script_path()
 end
 local spoonPath = script_path()
 
-local List = dofile(spoonPath.."/list.lua")
-local makeCounter = dofile(spoonPath.."/counter.lua")
+local circularbuffer = dofile(spoonPath.."/circularbuffer.lua")
+local Trie = dofile(spoonPath.."/trie.lua")
 
-DfaFactory.WORDBOUNDARY_NODE = 1
-DfaFactory.INTERNAL_NODE = 2
-
-local biggestkey = ""
-
-function DfaFactory:getkey(nodecollection)
-  -- each Trie has a "value" key that is numeric and unique
-  -- this function returns a value unique and consistent for a set of nodes
-  local ids = {}
-  for i=1,#nodecollection do
-    ids[#ids+1] = nodecollection[i].value
+function Dfa:getMatchingExpansion()
+  local expansions = self.dfa[self.state].expansions
+  if expansions then
+    assert(#expansions == 1, "There should only be only expansion matching.")
+    return expansions[1]
   end
-  table.sort(ids)
-  local key = table.concat(ids, ":")
-  if #key > #biggestkey then biggestkey = key end
-  return key
+  return nil
 end
 
-function DfaFactory:getsetnumber(nodecollection)
-  -- add it if necessary
-  local key = self:getkey(nodecollection)
-  local set = self.setnumbers[key]
-  local new = not set
-  if new then -- add it
-    set = self.getnextsetnumber()
-    self.setnumbers[key] = set
-    if self.debug then print(("New node's key: %s"):format(key)) end
-  end
-  return set, new
+function Dfa:clear()
+  self.states:clear()
+  self.state = Dfa.WORDBOUNDARY_NODE
 end
 
-function DfaFactory:print()
-  for i=1,#dfa do
-    local state = dfa[i]
-    for _,x in pairs(state.expansions or {}) do
-      if type(x) == "table" then
-        x = x.expansion
-      end
-      print(("%d has %s"):format(i,x))
-    end
-    for edge, j in pairs(state.transitions or {}) do
-      local label = edge
-      if type(label) == "number" then
-        label = utf8.char(label)
-      end
-      print(("%d -> %s -> %d"):format(i,label,j))
-    end
-  end
+function Dfa:rewindstate()
+  self.states:pop()
+  self.state = self.states:getHead() or Dfa.WORDBOUNDARY_NODE
 end
 
--- Combine all expansions and transitions from the indicated nodes
---
--- Factor in internal and wordboundaries; they're included in the resulting combined transitions.
-function DfaFactory:combinenodes(nodes)
-  local expansions = {}
-  local transitions = {} -- transitions[c] is the set of trie nodes that c goes to
-  for i=1,#nodes do
-    local node = nodes[i]
-    if node.expansions then
-      for j=1,#node.expansions do
-        expansions[#expansions+1] = node.expansions[j]
-      end
-    end
-    for k,v in pairs(node.transitions or {}) do
-      local key = k
-      if type(key) == "number" then
-        key = utf8.char(key)
-      end
-      if not transitions[k] then
-        if node ~= self.internals and self.internals.transitions and self.internals.transitions[k] then
-          -- evaluate starting new internals with the transition
-          transitions[k] = { self.internals.transitions[k] }
-        else
-          transitions[k] = {}
-        end
-      end
-      transitions[k][#transitions[k]+1] = v
-      if self.isEndChar(key) then -- also consider word boundaries starting here
-        if self.debug then print(("End char %s (%s)"):format(key,k)) end
-        transitions[k][#transitions[k]+1] = self.wordboundary
-      end
-    end
-  end
-  return expansions, transitions
+function Dfa:selectstate(state)
+  self.state = state
+  self.states:push(state)
 end
 
-function DfaFactory:generatestate(expansions, transitions)
-  local state = {transitions = {}} -- state.transitions[c] is a single set id
-  for k,v in pairs(transitions) do
-    local setnumber, new = self:getsetnumber(v)
-    state.transitions[k] = setnumber
-    if new then
-      -- add it to the queue
-      self.queue:pushright(v)
+function Dfa:followedge(charcode)
+  if self.isCompletion then -- reset after completions
+    self.isCompletion = false
+    self:selectstate(Dfa.WORDBOUNDARY_NODE)
+  end
+  local str = utf8.char(charcode)
+  if self.debug then print(("Char %s, code %s"):format(str,charcode)) end
+  local nextstate = self.dfa[self.state].transitions[charcode] -- follow any valid transitions
+  if nextstate == nil then -- no valid transitions
+    if self.isEndChar(str) then
+      -- check original state for completions, otherwise reset
+      nextstate = self.dfa[self.state].transitions[Trie.COMPLETION]
+      if nextstate == nil then
+        nextstate = Dfa.WORDBOUNDARY_NODE
+      else
+        self.isCompletion = true -- go straight to word boundary state after this match
+      end
+    else
+      nextstate = self.dfa[Dfa.INTERNAL_NODE].transitions[charcode] or Dfa.INTERNAL_NODE -- to internals
     end
   end
-  if #expansions > 0 then
-    state.expansions = expansions
-  end
-  return state
+  if self.debug then print(( "%d -> %s -> %d" ):format(self.state, str, nextstate)) end
+
+  self:selectstate(nextstate)
 end
 
--- Return a DFA based on the NFA represented by the trie set
-function DfaFactory.create(trieset, isEndChar, debug)
-  assert(trieset and trieset.wordboundary and trieset.internals, "Trie set must have word boundaries and internals.")
+function Dfa.new(states, isEndChar, maxStatesUndo, debug)
+  assert(states, "Must provide states")
   assert(isEndChar, "Must pass in a function to identify end characters")
-
+  assert(maxStatesUndo, "Must pass in a number of states to save")
   self = {
     debug = not not debug,
-    getnextsetnumber = makeCounter(),
-    dfa = {}, -- dfa[i] for i=1,n is a table containing set ID values, keyed by characters
-    setnumbers = {}, -- temporary table to hold set numbers by key (only used in construction)
-    queue = List.new(),
-    internals = trieset.internals,
-    wordboundary = trieset.wordboundary,
+    dfa = states,
     isEndChar = isEndChar,
+    state = Dfa.WORDBOUNDARY_NODE,
+    states = circularbuffer.new(maxStatesUndo),
+    isCompletion = false, -- variable to hold state: when we've completed, we stay in the completion state, but the next move goes from the word boundary root
   }
-  self = setmetatable(self, DfaFactory)
-
-  local boundaryset = { self.wordboundary }
-  local internalset = { self.internals }
-  self.queue:pushright(boundaryset) -- seed the boundary set
-  self.queue:pushright(internalset) -- seed the internals set
-  assert(self:getsetnumber(boundaryset) == DfaFactory.WORDBOUNDARY_NODE, "Word boundary set must have correct number")
-  assert(self:getsetnumber(internalset) == DfaFactory.INTERNAL_NODE, "Internal set must have correct number")
-  while not self.queue:empty() do
-    local nodes = self.queue:popleft()
-    local expansions, transitions = self:combinenodes(nodes)
-    local state = self:generatestate(expansions, transitions)
-    local activeset = self:getsetnumber(nodes)
-    self.dfa[activeset] = state
-  end
-  if self.debug then print(("Biggest key: %s"):format(biggestkey)) end
-  if self.debug then print(("Nodes: %s"):format(#self.dfa)) end
-
-  return self.dfa
+  self = setmetatable(self, Dfa)
+  return self
 end
 
-return DfaFactory
-
+return Dfa

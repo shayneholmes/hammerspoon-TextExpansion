@@ -23,8 +23,6 @@ end
 obj.spoonPath = script_path()
 
 local circularbuffer = dofile(obj.spoonPath.."/circularbuffer.lua")
-local Trie = dofile(obj.spoonPath.."/trie.lua")
-local DfaFactory = dofile(obj.spoonPath.."/dfa.lua")
 local StateManager = dofile(obj.spoonPath.."/statemanager.lua")
 
 -- Dependencies
@@ -304,9 +302,7 @@ local function init(self)
   generateExpansions(self)
   timeoutSeconds = self.timeoutSeconds
   buffer = circularbuffer.new(maxAbbreviationLength)
-  local trieset = Trie.createtrieset(expansions, debug)
-  local dfa = DfaFactory.create(trieset, isEndChar, debug)
-  statemanager = StateManager.new(dfa, isEndChar, maxStatesUndo, debug)
+  statemanager = StateManager.new(expansions, isEndChar, maxStatesUndo, debug)
   resetAbbreviation()
   keyWatcher = eventtap.new({ eventtap.event.types.keyDown }, function(ev) return handleEvent(self, ev) end)
 end

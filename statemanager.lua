@@ -1,6 +1,3 @@
--- Use a provided DFA to manage state and report back any expansions that
--- are in the active state
-
 StateManager = {}
 StateManager.__index = StateManager
 
@@ -10,75 +7,65 @@ local function script_path()
 end
 local spoonPath = script_path()
 
-local circularbuffer = dofile(spoonPath.."/circularbuffer.lua")
-local Dfa = dofile(spoonPath.."/dfa.lua")
 local Trie = dofile(spoonPath.."/trie.lua")
+local DfaFactory = dofile(spoonPath.."/dfafactory.lua")
+
+function StateManager:getgroupid(x)
+  local groupid = 1
+  -- if not x.casesensitive then -- case sensitive has to have a lower number than the other for collision precedence
+  --   groupid = groupid + 1
+  -- end
+  return groupid
+end
+
+function StateManager.new(expansions, isEndChar, maxStatesUndo, debug)
+  local self = {
+    dfas = {}, -- a group of DFAs to coordinate
+  }
+  self = setmetatable(self, StateManager)
+
+  local expansiongroups = {}
+  for k,x in pairs(expansions) do
+    local groupid = self:getgroupid(x)
+    if not expansiongroups[groupid] then expansiongroups[groupid] = {} end
+    expansiongroups[groupid][k] = x
+  end
+  for k,expansions in pairs(expansiongroups) do
+    local trieset = Trie.createtrieset(expansions, debug)
+    local states = DfaFactory.create(trieset, isEndChar, debug)
+    local dfa = Dfa.new(states, isEndChar, maxStatesUndo, debug)
+    self.dfas[#self.dfas+1] = dfa
+  end
+  return self
+end
 
 function StateManager:getMatchingExpansion()
-  local expansions = self.dfa[self.state].expansions
-  if expansions then
-    assert(#expansions == 1, "There should only be only expansion matching.")
-    return expansions[1]
+  for i=1,#self.dfas do
+    local dfa = self.dfas[i]
+    local match = dfa:getMatchingExpansion()
+    if match then
+      return match
+    end
   end
   return nil
 end
 
 function StateManager:clear()
-  self.states:clear()
-  self.state = Dfa.WORDBOUNDARY_NODE
+  for i=1,#self.dfas do
+    self.dfas[i]:clear()
+  end
 end
 
 function StateManager:rewindstate()
-  self.states:pop()
-  self.state = self.states:getHead() or Dfa.WORDBOUNDARY_NODE
-end
-
-function StateManager:selectstate(state)
-  self.state = state
-  self.states:push(state)
+  for i=1,#self.dfas do
+    self.dfas[i]:rewindstate()
+  end
 end
 
 function StateManager:followedge(charcode)
-  if self.isCompletion then -- reset after completions
-    self.isCompletion = false
-    self:selectstate(Dfa.WORDBOUNDARY_NODE)
+  for i=1,#self.dfas do
+    self.dfas[i]:followedge(charcode)
   end
-  local str = utf8.char(charcode)
-  if self.debug then print(("Char %s, code %s"):format(str,charcode)) end
-  local nextstate = self.dfa[self.state].transitions[charcode] -- follow any valid transitions
-  if nextstate == nil then -- no valid transitions
-    if self.isEndChar(str) then
-      -- check original state for completions, otherwise reset
-      nextstate = self.dfa[self.state].transitions[Trie.COMPLETION]
-      if nextstate == nil then
-        nextstate = Dfa.WORDBOUNDARY_NODE
-      else
-        self.isCompletion = true -- go straight to word boundary state after this match
-      end
-    else
-      nextstate = self.dfa[Dfa.INTERNAL_NODE].transitions[charcode] or Dfa.INTERNAL_NODE -- to internals
-    end
-  end
-  if self.debug then print(( "%d -> %s -> %d" ):format(self.state, str, nextstate)) end
-
-  self:selectstate(nextstate)
-end
-
-
-function StateManager.new(dfa, isEndChar, maxStatesUndo, debug)
-  assert(dfa, "Must provide a DFA")
-  assert(isEndChar, "Must pass in a function to identify end characters")
-  assert(maxStatesUndo, "Must pass in a number of states to save")
-  self = {
-    debug = not not debug,
-    dfa = dfa,
-    isEndChar = isEndChar,
-    state = Dfa.WORDBOUNDARY_NODE,
-    states = circularbuffer.new(maxStatesUndo),
-    isCompletion = false, -- variable to hold state: when we've completed, we stay in the completion state, but the next move goes from the word boundary root
-  }
-  self = setmetatable(self, StateManager)
-  return self
 end
 
 return StateManager
