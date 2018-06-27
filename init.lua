@@ -142,6 +142,11 @@ local abbreviation
 local pendingTimer
 local timeoutSeconds
 
+-- Test variables
+local testMocked -- nil normally, but during tests, mocked things are stored here
+local testOutput
+local testDoAfter
+
 local function merge_tables(default, override)
   local combined = {}
   for k,v in pairs(default) do combined[k] = v end
@@ -352,6 +357,7 @@ end
 ---
 --- You must make any changes to `TextExpansion.expansions` and `TextExpansion.specialKeys` before this method is called; any further changes to them won't take effect until the watcher is started again.
 function obj:start()
+  assert(not testMocked, "Can't start in test mode")
   if keyWatcher ~= nil then
     print("Warning: watcher is already running! Restarting...")
     keyWatcher:stop()
@@ -513,38 +519,60 @@ function obj:testPerformance(expansions, input)
   self.expansions = originalExpansions
 end
 
-function obj:runtest(expansions, input, expected, expectedDoAfters)
+function obj:testSetup()
   assert(not obj:isEnabled(), "Object must not be enabled when running tests.")
+  assert(not testMocked, "Can't setup tests twice!")
+  testMocked = {
+    expansions = self.expansions,
+    eventtap = eventtap,
+    doAfter = doAfter,
+    restartActivityTimer = restartInactivityTimer,
+  }
 
-  local output = ""
-  local pendingDoAfter = nil
-
-  -- setup
-  local originalExpansions = self.expansions
-  local originaleventtap = eventtap
-  local originalDoAfter = doAfter
-  local originalRestartActivityTimer = restartInactivityTimer
-
-  self.expansions = expansions
+  self.expansions = nil -- this must be set by a test
   eventtap = {
     keyStrokes = function(str) -- add strokes to output
-      output = output .. str
+      testOutput = testOutput .. str
     end,
     keyStroke = function() -- remove strokes from output
-      assert(output:len() > 0)
-      output = output:sub(1, -2)
+      assert(testOutput:len() > 0)
+      testOutput = testOutput:sub(1, -2)
     end,
     new = function() return { stop = function() end, start = function() end } end,
     event = { types = { keyDown = nil } },
   }
   doAfter = function(_, func)
-    pendingDoAfter = func
+    testDoAfter = func
   end
-  restartInactivityTimer = function() end
+  restartInactivityTimer = function() end -- this calls doAfter
+end
 
-  self:start()
+function obj:testTeardown()
+  assert(testMocked, "Test mode must already be set up to tear it down")
+  self.expansions = testMocked.expansions
+  eventtap = testMocked.eventtap
+  doAfter = testMocked.doAfter
+  restartActivityTimer = testMocked.restartInactivityTimer
+  testMocked = nil
 
-  -- run test
+  testOutput = nil
+  testDoAfter = nil
+
+  keyWatcher = nil
+end
+
+function obj:testSetContext(expansions)
+  assert(testMocked, "Test mode must be enabled to set a context")
+  self.expansions = expansions
+  init(self)
+end
+
+function obj:testRun(input, expected)
+  assert(testMocked, "Test mode must be enabled to run a test")
+  assert(self.expansions, "A context must be set before running a test")
+  testOutput = ""
+  testDoAfter = nil
+  resetAbbreviation()
   string.gsub(input, ".", function(char)
     local ev = {
       getKeyCode = function() return " " end,
@@ -553,28 +581,23 @@ function obj:runtest(expansions, input, expected, expectedDoAfters)
     }
     local eat = handleEvent(self, ev)
     if not eat then
-      output = output .. char
+      testOutput = testOutput .. char
     end
-    if pendingDoAfter then
-      pendingDoAfter()
-      pendingDoAfter = nil
+    if testDoAfter then
+      testDoAfter()
+      testDoAfter = nil
     end
   end)
 
-  assert(expected == output,
-    ("Output for input %s: Expected: %s, actual: %s"):format(input, expected, output))
-
-  -- teardown
-  self:stop()
-  self.expansions = originalExpansions
-  eventtap = originaleventtap
-  doAfter = originalDoAfter
-  restartInactivityTimer = originalRestartActivityTimer
+  assert(testDoAfter == nil, "Must be no remaining delayed calls")
+  assert(expected == testOutput,
+    ("Output for input \"%s\": Expected: \"%s\", actual: \"%s\""):format(input, expected, testOutput))
 end
+
 
 function obj:runtests()
   local tests = dofile(obj.spoonPath.."/tests.lua")
-  tests.runtests(self)
+  return tests.runtests(self)
 end
 
 return obj

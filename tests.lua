@@ -1,6 +1,6 @@
 local obj = {}
 
-local closure = function()
+local counter = function() -- closure
   local counter = 0
   return function()
     counter = counter + 1 return ("%s"):format(counter)
@@ -34,7 +34,7 @@ local settings = {
   },
   {
     title = "function",
-    expansions = {func = closure()},
+    expansions = {func = counter()},
     cases = {
       { title = "multiple times",
         input = "func func func ", expected = "1 2 3 " }
@@ -144,21 +144,35 @@ local settings = {
 }
 
 function obj.runtests(TextExpansion)
+  TextExpansion:testSetup()
   print("Running tests...")
+  local failed = {}
   for i=1,#settings do
     local setting = settings[i]
+    TextExpansion:testSetContext(setting.expansions)
     for j=1,#(setting.cases or {}) do
       local case = setting.cases[j]
       print(("%s:%s"):format(setting.title or "anonymous", case.title or "anonymous"))
-      TextExpansion:runtest(
-        setting.expansions,
-        case.input or case[1],
-        case.expected or case[2],
-        case.doAfters or case[3]
-      )
+      local status, err = pcall(function()
+        TextExpansion:testRun(
+          case.input or case[1],
+          case.expected or case[2]
+        )
+      end)
+      if not status then
+        print(err)
+        failed[#failed+1] = err
+      end
     end
   end
+  TextExpansion:testTeardown()
   print("Tests complete.")
+  if #failed > 0 then
+    print(("%d failed."):format(#failed))
+  else
+    print("All passed.")
+  end
+  return failed
 end
 
 return obj
