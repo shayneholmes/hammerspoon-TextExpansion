@@ -46,6 +46,12 @@ function Dfa:followedge(charcode)
     self:selectstate(Dfa.WORDBOUNDARY_NODE)
   end
   local str = utf8.char(charcode)
+  if self.homogenizecase then
+    str = str:lower()
+    for p,c in utf8.codes(str) do
+      charcode = c
+    end
+  end
   if self.debug then print(("Char %s, code %s"):format(str,charcode)) end
   local nextstate = self.dfa[self.state].transitions[charcode] -- follow any valid transitions
   if nextstate == nil then -- no valid transitions
@@ -66,13 +72,14 @@ function Dfa:followedge(charcode)
   self:selectstate(nextstate)
 end
 
-function Dfa.new(states, isEndChar, maxStatesUndo, debug)
+function Dfa.new(states, homogenizecase, isEndChar, maxStatesUndo, debug)
   assert(states, "Must provide states")
-  assert(isEndChar, "Must pass in a function to identify end characters")
+  assert(type(isEndChar) == "function", "Must pass in a function to identify end characters")
   assert(maxStatesUndo, "Must pass in a number of states to save")
   local self = {
     debug = not not debug,
     dfa = states,
+    homogenizecase = homogenizecase,
     isEndChar = isEndChar,
     state = Dfa.WORDBOUNDARY_NODE,
     states = circularbuffer.new(maxStatesUndo),

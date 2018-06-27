@@ -65,17 +65,17 @@ obj.expansions = {}
 --- Variable
 --- Table containing options to be applied to expansions by default. The following keys are valid:
 --- * **backspace** (default true): Use backspaces to remove the abbreviation when it is expanded.
+--- * **casesensitive** (default false): Case of abbreviation must match exactly
 --- * **internal** (default false): Trigger the expansion even when the abbreviation is inside another word
 --- * **resetrecognizer** (default false): When an abbreviation is completed, reset the recognizer.
 --- * **sendcompletionkey** (default true): When an abbreviation is completed, send the completion key along with it.
 --- * **waitforcompletionkey** (default true): Wait for a completion key before expanding the abbreviation.
 -- Options still TODO
--- Recognizer:
---   casesensitive = false, -- case of abbreviation must match exactly
 -- Expander:
 --   matchcase = true, -- make expansion conform in case to the abbreviation (works only for first caps, all caps)
 obj.defaults = {
   backspace = true, -- remove the abbreviation
+  casesensitive = false, -- case of abbreviation must match exactly
   internal = false, -- trigger even inside another word
   resetrecognizer = false, -- reset the recognizer after each completion
   sendcompletionkey = true, -- send the completion key

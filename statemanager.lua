@@ -10,11 +10,13 @@ local spoonPath = script_path()
 local Trie = dofile(spoonPath.."/trie.lua")
 local DfaFactory = dofile(spoonPath.."/dfafactory.lua")
 
+StateManager.CASE_INSENSITIVE_GROUP = 2
+
 function StateManager:getgroupid(x)
   local groupid = 1
-  -- if not x.casesensitive then -- case sensitive has to have a lower number than the other for collision precedence
-  --   groupid = groupid + 1
-  -- end
+  if not x.casesensitive then -- case sensitive has to have a lower number than the other for collision precedence
+    groupid = groupid + 1
+  end
   return groupid
 end
 
@@ -31,9 +33,10 @@ function StateManager.new(expansions, isEndChar, maxStatesUndo, debug)
     expansiongroups[groupid][k] = x
   end
   for k,expansions in pairs(expansiongroups) do
-    local trieset = Trie.createtrieset(expansions, debug)
+    local homogenizecase = (k == StateManager.CASE_INSENSITIVE_GROUP)
+    local trieset = Trie.createtrieset(expansions, homogenizecase, debug)
     local states = DfaFactory.create(trieset, isEndChar, debug)
-    local dfa = Dfa.new(states, isEndChar, maxStatesUndo, debug)
+    local dfa = Dfa.new(states, homogenizecase, isEndChar, maxStatesUndo, debug)
     self.dfas[#self.dfas+1] = dfa
   end
   return self

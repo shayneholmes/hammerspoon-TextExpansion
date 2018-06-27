@@ -145,7 +145,41 @@ local settings = {
         expected = "00001t  00011t  00101t  00111t  01001t  01011t  01101t  01111t  10001t  10011t  10101t  10111t  11001t  11011t  11101t  11111t "
       },
     }
-  }
+  },
+  {
+    title = "case sensitivity",
+    expansions = {
+      lower = "x",
+      UPPER = "X",
+      collision = "lower",
+      Collision = {
+        expansion = "upper",
+        casesensitive = "true",
+      },
+    },
+    cases = {
+      {
+        title = "lowercase",
+        input = "lower ",
+        expected = "x ",
+      },
+      {
+        title = "uppercase",
+        input = "UPPER ",
+        expected = "X ",
+      },
+      {
+        title = "case sensitive ones win",
+        input = "Collision ",
+        expected = "upper ",
+      },
+      {
+        title = "case insensitive trigger",
+        input = "CoLLiSiON ",
+        expected = "lower ",
+      },
+    },
+  },
 }
 
 function obj.runtests(TextExpansion)
