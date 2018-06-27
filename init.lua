@@ -513,4 +513,64 @@ function obj:testPerformance(expansions, input)
   self.expansions = originalExpansions
 end
 
+function obj:runtest(expansions, input, expected, expectedDoAfters)
+  assert(not obj:isEnabled(), "Object must not be enabled when running tests.")
+
+  local output = ""
+  local doAfters = 0
+
+  -- setup
+  local originalExpansions = self.expansions
+  local originaleventtap = eventtap
+  local originalDoAfter = doAfter
+  local originalRestartActivityTimer = restartInactivityTimer
+
+  self.expansions = expansions
+  eventtap = {
+    keyStrokes = function(str) -- add strokes to output
+      output = output .. str
+    end,
+    keyStroke = function() -- remove strokes from output
+      assert(output:len() > 0)
+      output = output:sub(1, -2)
+    end,
+    new = function() return { stop = function() end, start = function() end } end,
+    event = { types = { keyDown = nil } },
+  }
+  doAfter = function() doAfters = doAfters + 1 end
+  restartInactivityTimer = function() end
+
+  self:start()
+
+  -- run test
+  string.gsub(input, ".", function(char)
+    local ev = {
+      getKeyCode = function() return " " end,
+      getCharacters = function() return char end,
+      getFlags = function() return {cmd = false} end,
+    }
+    local eat = handleEvent(self, ev)
+    if not eat then
+      output = output .. char
+    end
+  end)
+
+  assert(expected == output,
+    ("Output for input %s: Expected: %s, actual: %s"):format(input, expected, output))
+  assert((expectedDoAfters or 0) == doAfters,
+    ("doAfters for input %s: Expected: %s, actual: %s"):format(input, expectedDoAfters, doAfters))
+
+  -- teardown
+  self:stop()
+  self.expansions = originalExpansions
+  eventtap = originaleventtap
+  doAfter = originalDoAfter
+  restartInactivityTimer = originalRestartActivityTimer
+end
+
+function obj:runtests()
+  local tests = dofile(obj.spoonPath.."/tests.lua")
+  tests.runtests(self)
+end
+
 return obj
