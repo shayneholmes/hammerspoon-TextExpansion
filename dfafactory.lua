@@ -172,4 +172,3 @@ function DfaFactory.create(trieset, isEndChar, debug)
 end
 
 return DfaFactory
-
