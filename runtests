@@ -2,6 +2,7 @@
 -- Run this from the command line
 local tests = require('tests')
 local failures = tests.runtests()
+-- tests.testPerformance()
 if #failures > 0 then
   os.exit(1) -- signal failure
 end

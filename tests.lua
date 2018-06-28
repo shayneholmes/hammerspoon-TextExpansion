@@ -331,17 +331,19 @@ local settings = {
   },
 }
 
+function getTextExpansion()
+  -- being run from the command line; mock appropriately and set up the module ourselves
+  hs = {
+    keycodes = {
+      map = setmetatable({}, {__index = function() return 1 end}) -- shameless mock
+    },
+    timer = {},
+  }
+  return require('init')
+end
+
 function obj.runtests(TextExpansion)
-  if not TextExpansion then
-    -- being run from the command line; mock appropriately and set up the module ourselves
-    hs = {
-      keycodes = {
-        map = setmetatable({}, {__index = function() return 1 end}) -- shameless mock
-      },
-      timer = {},
-    }
-    TextExpansion = require('init')
-  end
+  if not TextExpansion then TextExpansion = getTextExpansion() end
   TextExpansion:testSetup()
   print("Running tests...")
   local failed = {}
@@ -371,6 +373,76 @@ function obj.runtests(TextExpansion)
     print("All passed.")
   end
   return failed
+end
+
+function obj.testPerformance(TextExpansion)
+  if not TextExpansion then TextExpansion = getTextExpansion() end
+  TextExpansion:testSetup()
+
+  -- parameters
+  local expansionsSizes = {
+    10,
+    100,
+    1000,
+    10000,
+    100000,
+  }
+  local inputSizes = {
+    10,
+    100,
+    1000,
+    10000,
+    100000,
+  }
+  local attempts = 10 -- smooth out benchmarking
+
+  -- fixtures
+  for _, testExpansionsSize in pairs(expansionsSizes) do
+    local testExpansions = {}
+    for i=1,testExpansionsSize do
+      local key = ("abbreviation%d"):format(i)
+      local value = ("expansion%d"):format(i)
+      testExpansions[key] = value
+    end
+
+
+    -- init test
+    for _=1,attempts do
+      collectgarbage()
+      local initStart = os.clock()
+      TextExpansion:testSetContext(testExpansions)
+      local initEnd = os.clock()
+      print(("init, %d, %f"):format(
+        testExpansionsSize,
+        initEnd - initStart
+      ))
+    end
+
+    for _, testInputSize in pairs(inputSizes) do
+      local testInputBase = "abbreviation2 abbreviation and a bunch of words that don't make it very far down the state machine"
+      local sizeSoFar = #testInputBase
+      local testInput = testInputBase
+      while sizeSoFar < testInputSize do
+        sizeSoFar = sizeSoFar * 2
+        testInput = testInput .. testInput
+      end
+      testInput = string.sub(testInput, 1, testInputSize)
+
+      for _=1,attempts do
+        collectgarbage()
+        local inputStart = os.clock()
+        TextExpansion:testRun(testInput)
+        local inputEnd = os.clock()
+        print(("input, %d, %d, %f"):format(
+          testExpansionsSize,
+          testInputSize,
+          inputEnd - inputStart
+        ))
+      end
+    end
+    TextExpansion:stop()
+
+  end
 end
 
 return obj

@@ -478,94 +478,6 @@ function obj:setDebug(val)
   end
 end
 
-function obj:testPerformance(expansions, input)
-  assert(not obj:isEnabled(), "Object must not be enabled when running tests.")
-
-  -- parameters
-  local expansionsSizes = {
-    10,
-    100,
-    1000,
-    10000,
-    100000,
-  }
-  local inputSizes = {
-    10,
-    100,
-    1000,
-    10000,
-    100000,
-  }
-  local attempts = 10 -- smooth out benchmarking
-
-  -- mock
-  local originalExpansions = self.expansions
-  local originalGenerateKeystrokes = generateKeystrokes
-  generateKeystrokes = function() end
-
-  -- fixtures
-  for _, testExpansionsSize in pairs(expansionsSizes) do
-    local testExpansions = {}
-    for i=1,testExpansionsSize do
-      local key = ("abbreviation%d"):format(i)
-      local value = ("expansion%d"):format(i)
-      testExpansions[key] = value
-    end
-
-    self.expansions = testExpansions
-
-    -- init test
-    for _=1,attempts do
-      if self:isEnabled() then self:stop() end
-      local initStart = os.clock()
-      self:start()
-      local initEnd = os.clock()
-      print(("init, %d, %f"):format(
-        testExpansionsSize,
-        initEnd - initStart
-      ))
-    end
-
-    for _, testInputSize in pairs(inputSizes) do
-      local testInputBase = "abbreviation2 abbreviation and a bunch of words that don't make it very far down the state machine"
-      local sizeSoFar = #testInputBase
-      local testInput = testInputBase
-      while sizeSoFar < testInputSize do
-        sizeSoFar = sizeSoFar * 2
-        testInput = testInput .. testInput
-      end
-      testInput = string.sub(testInput, 1, testInputSize)
-
-      -- input test
-      for _=1,attempts do
-        local inputStart = os.clock()
-
-        string.gsub(testInput, ".", function(char)
-          local ev = {
-            getKeyCode = function() return " " end,
-            getCharacters = function() return char end,
-            getFlags = function() return {cmd = false} end,
-          }
-          handleEvent(self, ev)
-        end)
-
-        local inputEnd = os.clock()
-        print(("input, %d, %d, %f"):format(
-        testExpansionsSize,
-        testInputSize,
-        inputEnd - inputStart
-        ))
-      end
-    end
-    self:stop()
-
-  end
-
-  -- unmock
-  generateKeystrokes = originalGenerateKeystrokes
-  self.expansions = originalExpansions
-end
-
 function obj:testSetup()
   assert(not obj:isEnabled(), "Object must not be enabled when running tests.")
   assert(not testMocked, "Can't setup tests twice!")
@@ -637,14 +549,16 @@ function obj:testRun(input, expected)
   end)
 
   assert(testDoAfter == nil, "Must be no remaining delayed calls")
-  assert(expected == testOutput,
+  assert(not expected or expected == testOutput,
     ("Output for input \"%s\": Expected: \"%s\", actual: \"%s\""):format(input, expected, testOutput))
 end
 
 
 function obj:runtests()
   local tests = dofile(obj.spoonPath.."/tests.lua")
-  return tests.runtests(self)
+  local failures = tests.runtests(self)
+  tests.testPerformance(self)
+  return failures
 end
 
 return obj
