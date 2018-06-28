@@ -128,22 +128,19 @@ function DfaFactory:generatestate(expansions, transitions)
       self.queue:pushright(v)
     end
   end
-  if #expansions > 0 then
-    local best -- highest priority
-    for i=1,#expansions do
-      local x = expansions[i]
-      best = self.compare_expansions(best, x)
-    end
-    state.expansion = best
+  local best -- highest priority
+  for i=1,#expansions do
+    local x = expansions[i]
+    if x and x:takesPriorityOver(best) then best = x end
   end
+  state.expansion = best
   return state
 end
 
 -- Return a DFA based on the NFA represented by the trie set
-function DfaFactory.create(trieset, isEndChar, compare_expansions, debug)
+function DfaFactory.create(trieset, isEndChar, debug)
   assert(trieset and trieset.wordboundary and trieset.internals, "Trie set must have word boundaries and internals.")
   assert(type(isEndChar) == "function", "Must pass in a function to identify end characters")
-  assert(type(compare_expansions) == "function", "Must pass in a function to compare expansions")
 
   local self = {
     debug = not not debug,
@@ -154,7 +151,6 @@ function DfaFactory.create(trieset, isEndChar, compare_expansions, debug)
     internals = trieset.internals,
     wordboundary = trieset.wordboundary,
     isEndChar = isEndChar,
-    compare_expansions = compare_expansions,
   }
   self = setmetatable(self, DfaFactory)
 

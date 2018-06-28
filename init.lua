@@ -155,26 +155,6 @@ local function merge_tables(default, override)
   return combined
 end
 
--- compare two expansions, and return the one with higher precedence
-local function compare_expansions(x1, x2)
-  -- if one is missing, return the other (must be present to win)
-  if not x1 then return x2 end
-  if not x2 then return x1 end
-  -- higher priority wins
-  if x1.priority > x2.priority then return x1 end
-  if x2.priority > x1.priority then return x2 end
-  -- longer abbreviation wins
-  local x1len = x1.abbreviation:len()
-  local x2len = x2.abbreviation:len()
-  if x1len > x2len then return x1 end
-  if x2len > x1len then return x2 end
-  -- case sensitive wins
-  if x1.casesensitive and not x2.casesensitive then return x1 end
-  if x2.casesensitive and not x1.casesensitive then return x2 end
-  -- TODO
-  error("Collision; can't differentiate between these expansions!")
-end
-
 local function generateKeyActions(self)
   keyActions = {}
   for action,keyTable in pairs(self.specialKeys) do
@@ -184,14 +164,40 @@ local function generateKeyActions(self)
   end
 end
 
+-- compare two expansions, and return true if the first one is "greater than" (higher precedence) the other
+local function expansion_gt(x1, x2)
+  -- x1 is guaranteed to exist
+  -- if x2 is nil, this one wins
+  if not x2 then return true end -- must be present to win
+  -- higher priority wins
+  if x1.priority ~= x2.priority then return x1.priority > x2.priority end
+  -- longer abbreviation wins
+  local x1len = x1.abbreviation:len()
+  local x2len = x2.abbreviation:len()
+  if x1len ~= x2len then return x1len > x2len end
+  -- case sensitive wins
+  if x1.casesensitive ~= x2.casesensitive then return x1.casesensitive end
+  -- or tie; undefined behavior (but with an error message)
+  print(("Error: can't differentiate between expansions '%s' and '%s'!"):format(x1.abbreviation, x2.abbreviation))
+  return false
+end
+
 local function generateExpansions(self)
+  -- lock down defaults so they can't change midstream (because that would be crazy)
+  local expansion_fallback = {
+    takesPriorityOver = expansion_gt,
+  }
+  for k,v in pairs(self.defaults) do
+    expansion_fallback[k] = v
+  end
+  local expansion_metatable = { __index = expansion_fallback }
   expansions = {}
   for k,v in pairs(self.expansions) do
     if type(v) ~= "table" then
       v = {["expansion"] = v}
     end
     v.abbreviation = k
-    expansions[k] = setmetatable(v, {__index = self.defaults}) -- fallback to defaults
+    expansions[k] = setmetatable(v, expansion_metatable)
   end
 end
 
@@ -387,7 +393,7 @@ local function init(self)
   generateExpansions(self)
   timeoutSeconds = self.timeoutSeconds
   buffer = circularbuffer.new(maxAbbreviationLength)
-  statemanager = StateManager.new(expansions, isEndChar, compare_expansions, maxStatesUndo, debug)
+  statemanager = StateManager.new(expansions, isEndChar, maxStatesUndo, debug)
   resetAbbreviation()
   keyWatcher = eventtap.new({ eventtap.event.types.keyDown }, function(ev) return handleEvent(self, ev) end)
 end
