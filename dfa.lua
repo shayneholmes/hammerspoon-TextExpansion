@@ -53,18 +53,19 @@ function Dfa:followedge(charcode)
     end
   end
   if self.debug then print(("Char %s, code %s"):format(str,charcode)) end
-  local nextstate = self.dfa[self.state].transitions[charcode] -- follow any valid transitions
-  if nextstate == nil then -- no valid transitions
+  local nextstate = self.dfa[self.state].transitions[charcode] -- follow any explicit transition
+  if nextstate == nil then -- no explicit transition
+    local fallback = Dfa.INTERNAL_NODE
     if self.isEndChar(charcode) then
-      -- check original state for completions, otherwise reset
+      -- check state for completions
       nextstate = self.dfa[self.state].transitions[Trie.COMPLETION]
-      if nextstate == nil then
-        nextstate = Dfa.WORDBOUNDARY_NODE
-      else
+      fallback = Dfa.WORDBOUNDARY_NODE -- if none, go to word boundary state
+      if nextstate ~= nil then
         self.isCompletion = true -- go straight to word boundary state after this match
       end
-    else
-      nextstate = self.dfa[Dfa.INTERNAL_NODE].transitions[charcode] or Dfa.INTERNAL_NODE -- to internals
+    end
+    if nextstate == nil then
+      nextstate = self.dfa[Dfa.INTERNAL_NODE].transitions[charcode] or fallback
     end
   end
   if self.debug then print(( "%d -> %s -> %d" ):format(self.state, str, nextstate)) end

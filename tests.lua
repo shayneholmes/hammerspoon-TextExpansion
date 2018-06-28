@@ -120,6 +120,11 @@ local settings = {
     },
     cases = {
       {
+        title = "an internal gets replaced at a word boundary",
+        input = "11111 ",
+        expected = "X ",
+      },
+      {
         title = "an internal gets replaced when prefixed",
         input = "t11111 ",
         expected = "tX ",
@@ -259,6 +264,18 @@ local settings = {
         input = "v ", expected = "test " },
       { title = "one-character all caps workaround",
         input = "V ", expected = "TEST " },
+    }
+  },
+  { title = "internals starting with end chars",
+    expansions = {
+      ["/yd"] = {
+        expansion = "yard",
+        internal = true,
+      },
+    },
+    cases = {
+      { title = "expands at word boundaries",
+        input = "/yd ", expected = "yard " },
     }
   },
 }
