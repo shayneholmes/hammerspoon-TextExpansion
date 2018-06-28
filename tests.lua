@@ -200,6 +200,14 @@ local settings = {
         expansion = "test",
         matchcase = true,
       },
+      v = {
+        expansion = "test",
+        matchcase = true,
+      },
+      V = {
+        expansion = "TEST",
+        casesensitive = true,
+      },
       ["80b"] = {
         expansion = "test",
         matchcase = true,
@@ -234,6 +242,10 @@ local settings = {
         input = "T ", expected = "Test " },
       { title = "one caseable gives first cap",
         input = "80B ", expected = "Test " },
+      { title = "one-character baseline",
+        input = "v ", expected = "test " },
+      { title = "one-character all caps workaround",
+        input = "V ", expected = "TEST " },
     }
   },
 }
