@@ -79,7 +79,9 @@ function Trie.createtrieset(expansions, homogenizecase, debug)
   trieset.internals = trieset.wordboundary:new() -- tie counters together
   assert(trieset.wordboundary.value == 1, ("Word boundary node should be 1; actual %d"):format(trieset.wordboundary.value))
   assert(trieset.internals.value == 2, ("Internals node should be 2; actual %d"):format(trieset.internals.value))
-  for abbr,exp in pairs(expansions) do
+  for i=1,#expansions do
+    local exp = expansions[i]
+    local abbr = exp.abbreviation
     -- add each abbreviation to the appropriate trie with exp at its leaf
     if debug then print(("Inserting abbreviation %s with expansion %s"):format(abbr, exp)) end
     if homogenizecase then

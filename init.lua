@@ -197,7 +197,7 @@ local function generateExpansions(self)
       v = {["expansion"] = v}
     end
     v.abbreviation = k
-    expansions[k] = setmetatable(v, expansion_metatable)
+    expansions[#expansions+1] = setmetatable(v, expansion_metatable)
   end
 end
 

@@ -15,7 +15,7 @@ StateManager.CASE_INSENSITIVE_GROUP = 2
 function StateManager:getgroupid(x)
   local groupid = 1
   if not x.casesensitive then -- case sensitive has to have a lower number than the other for collision precedence
-    groupid = groupid + 1
+    groupid = StateManager.CASE_INSENSITIVE_GROUP
   end
   return groupid
 end
@@ -27,10 +27,12 @@ function StateManager.new(expansions, isEndChar, maxStatesUndo, debug)
   self = setmetatable(self, StateManager)
 
   local expansiongroups = {}
-  for k,x in pairs(expansions) do
+  for i=1,#expansions do
+    local x = expansions[i]
     local groupid = self:getgroupid(x)
     if not expansiongroups[groupid] then expansiongroups[groupid] = {} end
-    expansiongroups[groupid][k] = x
+    local group = expansiongroups[groupid]
+    group[#group+1] = x
   end
   for k,expansions in pairs(expansiongroups) do
     local homogenizecase = (k == StateManager.CASE_INSENSITIVE_GROUP)
