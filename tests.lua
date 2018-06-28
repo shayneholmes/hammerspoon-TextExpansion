@@ -9,6 +9,14 @@ end
 
 local settings = {
   {
+    title = "empty set",
+    expansions = {},
+    cases = {
+      { title = "nothing happens",
+        input = "nothing goes in ", expected = "nothing goes in " },
+    }
+  },
+  {
     title = "sample",
     expansions = {aaa = "bbbb"},
     cases = {
