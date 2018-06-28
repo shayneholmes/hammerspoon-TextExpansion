@@ -77,14 +77,14 @@ obj.defaults = {
   casesensitive = false, -- case of abbreviation must match exactly
   internal = false, -- trigger even inside another word
   matchcase = true, -- if you type an abbreviation in `ALL CAPS` or `FirstCaps`, the expansion will be typed in the same manner; ignored when `casesensitive` is set
-  priority = 0, -- for collision resolution
+  priority = 0, -- explicit override for priority between conflicting abbreviations
   resetrecognizer = false, -- reset the recognizer after each completion
   sendcompletionkey = true, -- send the completion key
   waitforcompletionkey = true, -- wait for a completion key
-  -- expansion = nil, -- not in default, must be defined
-  -- abbreviation = nil, -- programmatically populated at start
-  -- output = nil, -- populated at trigger time
-  -- trigger = nil, -- populated at trigger time
+  expansion = nil, -- not in default, must be defined
+  abbreviation = nil, -- programmatically populated at start
+  output = nil, -- populated at trigger time
+  trigger = nil, -- populated at trigger time
 }
 
 --- TextExpansion.specialKeys
@@ -161,8 +161,8 @@ local function compare_expansions(x1, x2)
   if not x1 then return x2 end
   if not x2 then return x1 end
   -- higher priority wins
-  if (x1.priority or 0) > (x2.priority or 0) then return x1 end
-  if (x2.priority or 0) > (x1.priority or 0) then return x2 end
+  if x1.priority > x2.priority then return x1 end
+  if x2.priority > x1.priority then return x2 end
   -- longer abbreviation wins
   local x1len = x1.abbreviation:len()
   local x2len = x2.abbreviation:len()
@@ -191,7 +191,7 @@ local function generateExpansions(self)
       v = {["expansion"] = v}
     end
     v.abbreviation = k
-    expansions[k] = merge_tables(self.defaults, v)
+    expansions[k] = setmetatable(v, {__index = self.defaults}) -- fallback to defaults
   end
 end
 
