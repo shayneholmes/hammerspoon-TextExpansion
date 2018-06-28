@@ -196,6 +196,14 @@ local settings = {
         expansion = "Jefferson",
         matchcase = true,
       },
+      t = {
+        expansion = "test",
+        matchcase = true,
+      },
+      ["80b"] = {
+        expansion = "test",
+        matchcase = true,
+      }
     },
     cases = {
       { title = "first caps",
@@ -208,8 +216,8 @@ local settings = {
         input = "Hey. bTW, how are you?", expected = "Hey. by the way, how are you?" },
       { title = "ignored b/c case sensitive",
         input = "CASESENSITIVE ", expected = "case sensitive " },
-      { title = "first cap doesn't work b/c it's a number",
-        input = "8Ball ", expected = "eight ball " },
+      { title = "first cap keys off first caseable",
+        input = "8Ball ", expected = "Eight ball " },
       { title = "all caps works with first number",
         input = "8BALL ", expected = "EIGHT BALL " },
       { title = "can't capitalize first char",
@@ -222,6 +230,10 @@ local settings = {
         input = "Name ", expected = "Jefferson " },
       { title = "name gets all caps",
         input = "NAME ", expected = "JEFFERSON " },
+      { title = "single char capitalizes first",
+        input = "T ", expected = "Test " },
+      { title = "one caseable gives first cap",
+        input = "80B ", expected = "Test " },
     }
   },
 }

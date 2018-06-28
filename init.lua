@@ -253,16 +253,42 @@ local function restartInactivityTimer()
   pendingTimer = doAfter(timeoutSeconds, function() resetAbbreviationTimeout() end)
 end
 
-local function isallcaps(str)
-  return str:upper() == str and str:lower() ~= str
+local CASE_NONE = 0
+local CASE_ALL_CAPS = 1
+local CASE_FIRST_CAP = 2
+local function getcase(str)
+  local upper = str:upper()
+  local lower = str:lower()
+  local caseables = 0
+  local firstupper = false
+  local anylower = false
+  for i=1,#str do
+    local upper = upper:sub(i,i)
+    if upper ~= lower:sub(i,i) then
+      caseables = caseables + 1
+      local isupper = upper == str:sub(i,i)
+      if caseables == 1 then
+        firstupper = isupper
+      end
+      if not isupper then
+        anylower = true
+        break
+      end
+    end
+  end
+  if firstupper then
+    if caseables > 1 and not anylower then
+      return CASE_ALL_CAPS
+    else
+      return CASE_FIRST_CAP
+    end
+  else
+    return CASE_NONE
+  end
 end
 
 local function makeallcaps(str)
   return str:upper()
-end
-
-local function isfirstcap(str)
-  return isallcaps(str:sub(1,1))
 end
 
 local function makefirstcap(str)
@@ -271,9 +297,10 @@ end
 
 -- modify output depending on trigger
 local function matchcase(trigger, output)
-  if isallcaps(trigger) then
+  local case = getcase(trigger)
+  if case == CASE_ALL_CAPS then
     return makeallcaps(output)
-  elseif isfirstcap(trigger) then
+  elseif case == CASE_FIRST_CAP then
     return makefirstcap(output)
   else
     return output
