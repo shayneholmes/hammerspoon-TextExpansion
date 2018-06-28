@@ -264,6 +264,16 @@ local settings = {
 }
 
 function obj.runtests(TextExpansion)
+  if not TextExpansion then
+    -- being run from the command line; mock appropriately and set up the module ourselves
+    hs = {
+      keycodes = {
+        map = setmetatable({}, {__index = function() return 1 end}) -- shameless mock
+      },
+      timer = {},
+    }
+    TextExpansion = require('init')
+  end
   TextExpansion:testSetup()
   print("Running tests...")
   local failed = {}

@@ -1,0 +1,7 @@
+#!/usr/bin/env lua
+-- Run this from the command line
+local tests = require('tests')
+local failures = tests.runtests()
+if #failures > 0 then
+  os.exit(1) -- signal failure
+end
