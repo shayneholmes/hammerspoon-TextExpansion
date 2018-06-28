@@ -282,7 +282,7 @@ function obj.runtests(TextExpansion)
     TextExpansion:testSetContext(setting.expansions)
     for j=1,#(setting.cases or {}) do
       local case = setting.cases[j]
-      print(("%s:%s"):format(setting.title or "anonymous", case.title or "anonymous"))
+      print(("%s: %s"):format(setting.title or "anonymous", case.title or "anonymous"))
       local status, err = pcall(function()
         TextExpansion:testRun(
           case.input or case[1],
