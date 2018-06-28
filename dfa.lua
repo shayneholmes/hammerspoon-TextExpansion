@@ -17,12 +17,7 @@ local circularbuffer = dofile(spoonPath.."/circularbuffer.lua")
 local Trie = dofile(spoonPath.."/trie.lua")
 
 function Dfa:getMatchingExpansion()
-  local expansions = self.dfa[self.state].expansions
-  if expansions then
-    assert(#expansions == 1, "There should only be only expansion matching.")
-    return expansions[1]
-  end
-  return nil
+  return self.dfa[self.state].expansion -- might be nil
 end
 
 function Dfa:clear()

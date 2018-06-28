@@ -68,6 +68,7 @@ obj.expansions = {}
 --- * **`casesensitive`** (default false): Case of abbreviation must match exactly
 --- * **`internal`** (default false): Trigger the expansion even when the abbreviation is inside another word
 --- * **`matchcase`** (default true): If you type an abbreviation in `ALL CAPS` or `FirstCaps`, the expansion will be typed in the same manner; ignored when `casesensitive` is set
+--- * **`priority`** (default 0): A number that specifies which of two expansions to use in case of collision. Expansions with higher numbers will be preferred.
 --- * **`resetrecognizer`** (default false): When an abbreviation is completed, reset the recognizer.
 --- * **`sendcompletionkey`** (default true): When an abbreviation is completed, send the completion key along with it.
 --- * **`waitforcompletionkey`** (default true): Wait for a completion key before expanding the abbreviation.
@@ -76,6 +77,7 @@ obj.defaults = {
   casesensitive = false, -- case of abbreviation must match exactly
   internal = false, -- trigger even inside another word
   matchcase = true, -- if you type an abbreviation in `ALL CAPS` or `FirstCaps`, the expansion will be typed in the same manner; ignored when `casesensitive` is set
+  priority = 0, -- for collision resolution
   resetrecognizer = false, -- reset the recognizer after each completion
   sendcompletionkey = true, -- send the completion key
   waitforcompletionkey = true, -- wait for a completion key
@@ -151,6 +153,26 @@ local function merge_tables(default, override)
   for k,v in pairs(default) do combined[k] = v end
   for k,v in pairs(override) do combined[k] = v end
   return combined
+end
+
+-- compare two expansions, and return the one with higher precedence
+local function compare_expansions(x1, x2)
+  -- if one is missing, return the other (must be present to win)
+  if not x1 then return x2 end
+  if not x2 then return x1 end
+  -- higher priority wins
+  if (x1.priority or 0) > (x2.priority or 0) then return x1 end
+  if (x2.priority or 0) > (x1.priority or 0) then return x2 end
+  -- longer abbreviation wins
+  local x1len = x1.abbreviation:len()
+  local x2len = x2.abbreviation:len()
+  if x1len > x2len then return x1 end
+  if x2len > x1len then return x2 end
+  -- case sensitive wins
+  if x1.casesensitive and not x2.casesensitive then return x1 end
+  if x2.casesensitive and not x1.casesensitive then return x2 end
+  -- TODO
+  error("Collision; can't differentiate between these expansions!")
 end
 
 local function generateKeyActions(self)
@@ -365,7 +387,7 @@ local function init(self)
   generateExpansions(self)
   timeoutSeconds = self.timeoutSeconds
   buffer = circularbuffer.new(maxAbbreviationLength)
-  statemanager = StateManager.new(expansions, isEndChar, maxStatesUndo, debug)
+  statemanager = StateManager.new(expansions, isEndChar, compare_expansions, maxStatesUndo, debug)
   resetAbbreviation()
   keyWatcher = eventtap.new({ eventtap.event.types.keyDown }, function(ev) return handleEvent(self, ev) end)
 end

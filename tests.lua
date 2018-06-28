@@ -278,6 +278,49 @@ local settings = {
         input = "/yd ", expected = "yard " },
     }
   },
+  {
+    title = "collisions and precedence",
+    expansions = {
+      ["/yd"] = {
+        expansion = "yard",
+        internal = true,
+      },
+      ["yd"] = "yesterday",
+      ["yard"] = {
+        expansion = "longer",
+        internal = true,
+      },
+      ["rd"] = {
+        expansion = "shorter",
+        internal = true,
+      },
+      ["yard1"] = {
+        expansion = "longer",
+        internal = true,
+      },
+      ["rd1"] = {
+        expansion = "shorter",
+        internal = true,
+        priority = 1,
+      },
+      ["CS1"] = { expansion = "sensitive", internal = true, casesensitive = true, },
+      ["cs1"] = { expansion = "insensitive", internal = true, casesensitive = false, },
+      ["cs2"] = { expansion = "insensitive", priority = 1, internal = true, casesensitive = false, },
+      ["CS2"] = { expansion = "sensitive", internal = true, casesensitive = true, },
+    },
+    cases = {
+      { title = "longer abbreviation wins",
+        input = "/yd ", expected = "yard " },
+      { title = "longer abbreviation wins",
+        input = "backyard ", expected = "backlonger " },
+      { title = "shorter abbreviation wins when pri is specified",
+        input = "backyard1 ", expected = "backyashorter " },
+      { title = "case sensitive wins",
+        input = "CS1 ", expected = "sensitive " },
+      { title = "higher priority wins",
+        input = "CS2 ", expected = "INSENSITIVE " }, -- case matching
+    }
+  },
 }
 
 function obj.runtests(TextExpansion)

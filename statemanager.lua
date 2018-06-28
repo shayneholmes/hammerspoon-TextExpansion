@@ -20,9 +20,10 @@ function StateManager:getgroupid(x)
   return groupid
 end
 
-function StateManager.new(expansions, isEndChar, maxStatesUndo, debug)
+function StateManager.new(expansions, isEndChar, compare_expansions, maxStatesUndo, debug)
   local self = {
     dfas = {}, -- a group of DFAs to coordinate
+    compare_expansions = compare_expansions,
   }
   self = setmetatable(self, StateManager)
 
@@ -35,7 +36,7 @@ function StateManager.new(expansions, isEndChar, maxStatesUndo, debug)
   for k,expansions in pairs(expansiongroups) do
     local homogenizecase = (k == StateManager.CASE_INSENSITIVE_GROUP)
     local trieset = Trie.createtrieset(expansions, homogenizecase, debug)
-    local states = DfaFactory.create(trieset, isEndChar, debug)
+    local states = DfaFactory.create(trieset, isEndChar, compare_expansions, debug)
     local dfa = Dfa.new(states, homogenizecase, isEndChar, maxStatesUndo, debug)
     self.dfas[#self.dfas+1] = dfa
   end
@@ -43,14 +44,13 @@ function StateManager.new(expansions, isEndChar, maxStatesUndo, debug)
 end
 
 function StateManager:getMatchingExpansion()
+  local best
   for i=1,#self.dfas do
     local dfa = self.dfas[i]
     local match = dfa:getMatchingExpansion()
-    if match then
-      return match
-    end
+    best = self.compare_expansions(best, match)
   end
-  return nil
+  return best
 end
 
 function StateManager:clear()

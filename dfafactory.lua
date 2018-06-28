@@ -4,7 +4,7 @@
 -- - transitions: a table wherein each subelement has:
 --   - key: a UTF-8 character code describing the edge
 --   - value: the state the edge leads to
--- - expansions: a list of expansions at this state
+-- - expansion: the highest priority expansion at this state
 
 -- Each expansion is included in the DFA only once, at the end state described
 -- by its abbreviation.
@@ -65,13 +65,10 @@ function DfaFactory:getsetnumber(nodecollection)
 end
 
 function DfaFactory:print()
-  for i=1,#states do
-    local state = states[i]
-    for _,x in pairs(state.expansions or {}) do
-      if type(x) == "table" then
-        x = x.expansion
-      end
-      print(("%d has %s"):format(i,x))
+  for i=1,#self.states do
+    local state = self.states[i]
+    if state.expansion then
+      print(("%d has %s"):format(i,state.expansion.expansion))
     end
     for edge, j in pairs(state.transitions or {}) do
       local label = edge
@@ -119,6 +116,8 @@ function DfaFactory:combinenodes(nodes)
   return expansions, transitions
 end
 
+-- Make a DFA state from the combined nodes
+-- Choose the expansion with highest priority to store here
 function DfaFactory:generatestate(expansions, transitions)
   local state = {transitions = {}} -- state.transitions[c] is a single set id
   for k,v in pairs(transitions) do
@@ -130,15 +129,21 @@ function DfaFactory:generatestate(expansions, transitions)
     end
   end
   if #expansions > 0 then
-    state.expansions = expansions
+    local best -- highest priority
+    for i=1,#expansions do
+      local x = expansions[i]
+      best = self.compare_expansions(best, x)
+    end
+    state.expansion = best
   end
   return state
 end
 
 -- Return a DFA based on the NFA represented by the trie set
-function DfaFactory.create(trieset, isEndChar, debug)
+function DfaFactory.create(trieset, isEndChar, compare_expansions, debug)
   assert(trieset and trieset.wordboundary and trieset.internals, "Trie set must have word boundaries and internals.")
-  assert(isEndChar, "Must pass in a function to identify end characters")
+  assert(type(isEndChar) == "function", "Must pass in a function to identify end characters")
+  assert(type(compare_expansions) == "function", "Must pass in a function to compare expansions")
 
   local self = {
     debug = not not debug,
@@ -149,6 +154,7 @@ function DfaFactory.create(trieset, isEndChar, debug)
     internals = trieset.internals,
     wordboundary = trieset.wordboundary,
     isEndChar = isEndChar,
+    compare_expansions = compare_expansions,
   }
   self = setmetatable(self, DfaFactory)
 
@@ -167,6 +173,7 @@ function DfaFactory.create(trieset, isEndChar, debug)
   end
   if self.debug then print(("Biggest key: %s"):format(biggestkey)) end
   if self.debug then print(("Nodes: %s"):format(#self.states)) end
+  if self.debug then self:print() end
 
   return self.states
 end
