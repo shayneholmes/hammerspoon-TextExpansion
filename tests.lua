@@ -25,6 +25,19 @@ local settings = {
     }
   },
   {
+    title = "cross-word boundaries",
+    expansions = {
+      ["doe snot"] = "does not",
+      ["tt"] = "test",
+    },
+    cases = {
+      { title = "baseline",
+        input = "doe snot tt ", expected = "does not test " },
+      { title = "interruption on the word boundary",
+        input = "doe tt ", expected = "doe test " },
+    }
+  },
+  {
     title = "functions",
     expansions = {
       counter = counter(),
