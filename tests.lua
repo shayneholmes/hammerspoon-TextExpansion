@@ -419,19 +419,11 @@ function obj.testPerformance(TextExpansion)
     end
 
     for _, testInputSize in pairs(inputSizes) do
-      local testInputBase = "abbreviation2 abbreviation and a bunch of words that don't make it very far down the state machine"
-      local sizeSoFar = #testInputBase
-      local testInput = testInputBase
-      while sizeSoFar < testInputSize do
-        sizeSoFar = sizeSoFar * 2
-        testInput = testInput .. testInput
-      end
-      testInput = string.sub(testInput, 1, testInputSize)
-
+      local testInput = "abbreviation1 abbreviation2 and some other text that doesn't get expanded "
       for _=1,attempts do
         collectgarbage()
         local inputStart = os.clock()
-        TextExpansion:testRun(testInput)
+        TextExpansion:testRun(testInput, nil, testInputSize)
         local inputEnd = os.clock()
         print(("input, %d, %d, %f"):format(
           testExpansionsSize,
@@ -441,8 +433,8 @@ function obj.testPerformance(TextExpansion)
       end
     end
     TextExpansion:stop()
-
   end
+  TextExpansion:testTeardown()
 end
 
 return obj

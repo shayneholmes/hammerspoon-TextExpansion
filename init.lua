@@ -526,18 +526,22 @@ function obj:testSetContext(expansions)
   init(self)
 end
 
-function obj:testRun(input, expected)
+function obj:testRun(input, expected, repeatlength)
   assert(testMocked, "Test mode must be enabled to run a test")
   assert(self.expansions, "A context must be set before running a test")
+  repeatlength = repeatlength or string.len(input)
   testOutput = ""
   testDoAfter = nil
   resetAbbreviation()
-  string.gsub(input, ".", function(char)
-    local ev = {
-      getKeyCode = function() return " " end,
-      getCharacters = function() return char end,
-      getFlags = function() return {cmd = false} end,
-    }
+  local getFlags = {cmd = false}
+  local ev = {
+    getKeyCode = function() return " " end,
+    getFlags = function() return getFlags end,
+  }
+  local charsSent = 0
+  local function sendchar(char)
+    if charsSent >= repeatlength then return end
+    ev.getCharacters = function() return char end
     local eat = handleEvent(self, ev)
     if not eat then
       testOutput = testOutput .. char
@@ -546,7 +550,12 @@ function obj:testRun(input, expected)
       testDoAfter()
       testDoAfter = nil
     end
-  end)
+    charsSent = charsSent + 1
+  end
+
+  while (charsSent < repeatlength) do
+    string.gsub(input, ".", sendchar)
+  end
 
   assert(testDoAfter == nil, "Must be no remaining delayed calls")
   assert(not expected or expected == testOutput,
