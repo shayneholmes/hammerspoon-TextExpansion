@@ -491,11 +491,14 @@ function obj:testSetup()
   self.expansions = nil -- this must be set by a test
   eventtap = {
     keyStrokes = function(str) -- add strokes to output
-      testOutput = testOutput .. str
+      testOutput[#testOutput+1] = str
     end,
     keyStroke = function() -- remove strokes from output
-      assert(testOutput:len() > 0)
-      testOutput = testOutput:sub(1, -2)
+      if testOutput[#testOutput]:len() == 1 then
+        testOutput[#testOutput] = nil
+      else
+        testOutput[#testOutput] = testOutput[#testOutput]:sub(1,-2)
+      end
     end,
     new = function() return { stop = function() end, start = function() end } end,
     event = { types = { keyDown = nil } },
@@ -530,7 +533,7 @@ function obj:testRun(input, expected, repeatlength)
   assert(testMocked, "Test mode must be enabled to run a test")
   assert(self.expansions, "A context must be set before running a test")
   repeatlength = repeatlength or string.len(input)
-  testOutput = ""
+  testOutput = {}
   testDoAfter = nil
   resetAbbreviation()
   local getFlags = {cmd = false}
@@ -544,7 +547,7 @@ function obj:testRun(input, expected, repeatlength)
     ev.getCharacters = function() return char end
     local eat = handleEvent(self, ev)
     if not eat then
-      testOutput = testOutput .. char
+      testOutput[#testOutput+1] = char
     end
     if testDoAfter then
       testDoAfter()
@@ -558,6 +561,7 @@ function obj:testRun(input, expected, repeatlength)
   end
 
   assert(testDoAfter == nil, "Must be no remaining delayed calls")
+  testOutput = table.concat(testOutput)
   assert(not expected or expected == testOutput,
     ("Output for input \"%s\": Expected: \"%s\", actual: \"%s\""):format(input, expected, testOutput))
 end
