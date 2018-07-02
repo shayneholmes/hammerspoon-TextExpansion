@@ -329,6 +329,23 @@ local settings = {
         input = "CS2 ", expected = "INSENSITIVE " }, -- case matching
     }
   },
+  {
+    title = "consecutive expansions",
+    expansions = {
+      ["aaa"] = {
+        expansion = "bbb",
+        internal = true,
+        waitforcompletionkey = false,
+        sendcompletionkey = false,
+      },
+    },
+    cases = {
+      { title = "just one",
+        input = "aaa", expected = "bbb" },
+      { title = "two in a row",
+        input = "aaaa", expected = "bbbb" },
+    }
+  },
 }
 
 function getTextExpansion()
