@@ -230,7 +230,7 @@ local function evaluateExpansion(expansion)
       print("~~ expansion for '" .. expansion.abbreviation .. "' gave an error of " .. result)
       result = nil
     end
-    output = result
+    output = result or "" -- nil values are okay
   end
   return output;
 end

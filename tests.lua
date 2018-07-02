@@ -346,6 +346,16 @@ local settings = {
         input = "aaaa", expected = "bbbb" },
     }
   },
+  {
+    title = "nil functions",
+    expansions = {
+      ["aaa"] = function() return nil end,
+    },
+    cases = {
+      { title = "backspacing",
+        input = "aaa ", expected = " " },
+    }
+  },
 }
 
 function getTextExpansion()
