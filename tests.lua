@@ -18,8 +18,13 @@ local apiTests = {
   {
     title = "doesn't start without init",
     func = function(te) te:start() end,
+    err = true,
+  },
+  {
+    title = "starting twice in a row is fine",
+    func = function(te) te:init() te:start() te:start() end,
     err = false,
-  }
+  },
 }
 
 local hotstringTests = {
@@ -432,13 +437,11 @@ end
 
 local function testSetContext(te, expansions)
   assert(testMocked, "Test mode must be enabled to set a context")
-  te.expansions = expansions
-  te:init()
+  te:setExpansions(expansions)
 end
 
 local function testRun(te, input, expected, repeatlength)
   assert(testMocked, "Test mode must be enabled to run a test")
-  assert(te.expansions, "A context must be set before running a test")
   repeatlength = repeatlength or string.len(input)
   testOutput = {}
   testDoAfter = nil
@@ -566,7 +569,7 @@ function obj.testPerformance(te)
     for _=1,attempts do
       collectgarbage()
       local initStart = os.clock()
-      te.expansions = testExpansions
+      testSetContext(testExpansions)
       local initEnd = os.clock()
       print(("init, %d, %f"):format(
         testExpansionsSize,

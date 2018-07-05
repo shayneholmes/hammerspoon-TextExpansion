@@ -37,30 +37,6 @@ obj.author = "Shayne Holmes"
 obj.homepage = "https://github.com/shayneholmes/hammerspoon-TextExpansion"
 obj.license = "MIT - https://opensource.org/licenses/MIT"
 
---- TextExpansion.expansions
---- Variable
---- Table containing expansions, indexed by their abbreviations.
----
---- The index of each entry is a sequence of printable characters; this is the **abbreviation**.
----
---- The value of each entry represents the **expansion**. It is one of:
---- * A string value containing the expanded text
---- * A nullary function (no parameters) that returns the expanded text
---- * A table with the key "expansion" containing either of the above, alongside any of the options from `defaults`
----
---- A simple example:
---- ```
---- spoon.TextExpansion.expansions = {
----   ["sig"] = "Sincerely, Foo",
----   ["dt"] = function() return os.date("%B %d, %Y") end,
----   ["hamm"] = {
----     expansion = "erspoon",
----     backspace = false,
----   },
---- }
---- ```
-obj.expansions = {}
-
 --- TextExpansion.defaults
 --- Variable
 --- Table containing options to be applied to expansions by default. The following keys are valid:
@@ -132,21 +108,16 @@ local maxAbbreviationLength = 40
 local maxStatesUndo = 10
 
 -- Internal variables
+local initialized = false
 local buffer
 local debug
 local trie
 local keyWatcher
 local keyActions -- generated on start() from specialKeys
-local expansions -- generated on start()
 local statemanager -- generated on start()
 local abbreviation
 local pendingTimer
 local timeoutSeconds
-
--- Test variables
-local testMocked -- nil normally, but during tests, mocked things are stored here
-local testOutput
-local testDoAfter
 
 local function merge_tables(default, override)
   local combined = {}
@@ -182,7 +153,7 @@ local function expansion_gt(x1, x2)
   return false
 end
 
-local function generateExpansions(self)
+local function generateExpansions(self, xs)
   -- lock down defaults so they can't change midstream (because that would be crazy)
   local expansion_fallback = {
     takesPriorityOver = expansion_gt,
@@ -191,14 +162,15 @@ local function generateExpansions(self)
     expansion_fallback[k] = v
   end
   local expansion_metatable = { __index = expansion_fallback }
-  expansions = {}
-  for k,v in pairs(self.expansions) do
+  local expansions = {}
+  for k,v in pairs(xs) do
     if type(v) ~= "table" then
       v = {["expansion"] = v}
     end
     v.abbreviation = k
     expansions[#expansions+1] = setmetatable(v, expansion_metatable)
   end
+  return expansions
 end
 
 local function resetAbbreviation()
@@ -389,40 +361,68 @@ function obj:handleEvent(ev)
   return eatAction
 end
 
+--- TextExpansion:setExpansions()
+--- Method
+--- Set the expansions that this TextExpansion object will recognize.
+---
+--- Pass in a table containing expansions, indexed by their abbreviations.
+---
+--- The index of each entry is a sequence of printable characters; this is the **abbreviation**.
+---
+--- The value of each entry represents the **expansion**. It is one of:
+--- * A string value containing the expanded text
+--- * A nullary function (no parameters) that returns the expanded text
+--- * A table with the key "expansion" containing either of the above, alongside any of the options from `defaults`
+---
+--- A simple example:
+--- ```
+--- spoon.TextExpansion:setExpansions({
+---   ["sig"] = "Sincerely, Foo",
+---   ["dt"] = function() return os.date("%B %d, %Y") end,
+---   ["hamm"] = {
+---     expansion = "erspoon",
+---     backspace = false,
+---   },
+--- })
+--- ```
+function obj:setExpansions(expansions)
+  local xs = generateExpansions(self, expansions)
+  statemanager = StateManager.new(xs, isEndChar, maxStatesUndo, debug)
+  resetAbbreviation()
+end
+
 --- TextExpansion:init()
 --- Method
---- Read expansions, and start the keyboard event watcher.
+--- Read configuration and setup internal state.
 ---
---- You must make any changes to `TextExpansion.expansions` and `TextExpansion.specialKeys` before this method is called; any further changes to them won't take effect until `init` is called again.
+--- You must make any changes to `TextExpansion.specialKeys` before this method is called; any further changes to it won't take effect until `init` is called again.
 function obj:init()
   generateKeyActions(self)
-  generateExpansions(self)
   timeoutSeconds = self.timeoutSeconds
   buffer = circularbuffer.new(maxAbbreviationLength)
-  statemanager = StateManager.new(expansions, isEndChar, maxStatesUndo, debug)
-  resetAbbreviation()
   keyWatcher = eventtap.new({ eventtap.event.types.keyDown }, function(ev) return self:handleEvent(ev) end)
+  self:setExpansions({})
+  initialized = true
 end
 
 --- TextExpansion:start()
 --- Method
---- Read expansions, and start the keyboard event watcher.
+--- Start the keyboard event watcher.
 ---
 --- You must make any changes to `TextExpansion.expansions` and `TextExpansion.specialKeys` before this method is called; any further changes to them won't take effect until the watcher is started again.
 function obj:start()
-  assert(not testMocked, "Can't start in test mode")
+  assert(initialized, "Must be initialized before running")
   if keyWatcher ~= nil then
     print("Warning: watcher is already running! Restarting...")
     keyWatcher:stop()
   end
-  self:init()
   if debug then print("Starting keyboard event watcher.") end
   keyWatcher:start()
 end
 
 --- TextExpansion:stop()
 --- Method
---- Stop and uninitialize the keyboard event watcher.
+--- Stop the keyboard event watcher.
 function obj:stop()
   if keyWatcher == nil then
     print("Warning: watcher is already stopped!")
