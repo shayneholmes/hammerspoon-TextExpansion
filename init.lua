@@ -357,7 +357,7 @@ local function processexpansion(expansion)
   end
 end
 
-local function handleEvent(self, ev)
+function obj:handleEvent(ev)
   restartInactivityTimer()
 
   local keyCode = ev:getKeyCode()
@@ -389,14 +389,19 @@ local function handleEvent(self, ev)
   return eatAction
 end
 
-local function init(self)
+--- TextExpansion:init()
+--- Method
+--- Read expansions, and start the keyboard event watcher.
+---
+--- You must make any changes to `TextExpansion.expansions` and `TextExpansion.specialKeys` before this method is called; any further changes to them won't take effect until `init` is called again.
+function obj:init()
   generateKeyActions(self)
   generateExpansions(self)
   timeoutSeconds = self.timeoutSeconds
   buffer = circularbuffer.new(maxAbbreviationLength)
   statemanager = StateManager.new(expansions, isEndChar, maxStatesUndo, debug)
   resetAbbreviation()
-  keyWatcher = eventtap.new({ eventtap.event.types.keyDown }, function(ev) return handleEvent(self, ev) end)
+  keyWatcher = eventtap.new({ eventtap.event.types.keyDown }, function(ev) return self:handleEvent(ev) end)
 end
 
 --- TextExpansion:start()
@@ -410,7 +415,7 @@ function obj:start()
     print("Warning: watcher is already running! Restarting...")
     keyWatcher:stop()
   end
-  init(self)
+  self:init()
   if debug then print("Starting keyboard event watcher.") end
   keyWatcher:start()
 end
@@ -426,38 +431,6 @@ function obj:stop()
   if debug then print("Stopping keyboard event watcher.") end
   keyWatcher:stop()
   keyWatcher = nil
-end
-
---- TextExpansion:suspend()
---- Method
---- Suspend the keyboard event watcher.
-function obj:suspend()
-  if keyWatcher == nil then
-    print("Error: watcher isn't initialized! Call TextExpansion:start() first.")
-    return
-  end
-  if not keyWatcher:isEnabled() then
-    print("Warning: watcher is already suspended! No change.")
-  else
-    if debug then print("Suspending keyboard event watcher.") end
-    keyWatcher:stop()
-  end
-end
-
---- TextExpansion:resume()
---- Method
---- Resume the keyboard event watcher.
-function obj:resume()
-  if keyWatcher == nil then
-    print("Error: watcher isn't initialized! Call TextExpansion:start() first.")
-    return
-  end
-  if keyWatcher:isEnabled() then
-    print("Warning: watcher is already running! No change.")
-  else
-    if debug then print("Resuming keyboard event watcher.") end
-    keyWatcher:start()
-  end
 end
 
 --- TextExpansion:isEnabled()
@@ -477,102 +450,6 @@ function obj:setDebug(val)
   else
     debug = false
   end
-end
-
-function obj:testSetup()
-  assert(not obj:isEnabled(), "Object must not be enabled when running tests.")
-  assert(not testMocked, "Can't setup tests twice!")
-  testMocked = {
-    expansions = self.expansions,
-    eventtap = eventtap,
-    doAfter = doAfter,
-    restartActivityTimer = restartInactivityTimer,
-  }
-
-  self.expansions = nil -- this must be set by a test
-  eventtap = {
-    keyStrokes = function(str) -- add strokes to output
-      testOutput[#testOutput+1] = str
-    end,
-    keyStroke = function() -- remove strokes from output
-      if testOutput[#testOutput]:len() == 1 then
-        testOutput[#testOutput] = nil
-      else
-        testOutput[#testOutput] = testOutput[#testOutput]:sub(1,-2)
-      end
-    end,
-    new = function() return { stop = function() end, start = function() end } end,
-    event = { types = { keyDown = nil } },
-  }
-  doAfter = function(_, func)
-    testDoAfter = func
-  end
-  restartInactivityTimer = function() end -- this calls doAfter
-end
-
-function obj:testTeardown()
-  assert(testMocked, "Test mode must already be set up to tear it down")
-  self.expansions = testMocked.expansions
-  eventtap = testMocked.eventtap
-  doAfter = testMocked.doAfter
-  restartActivityTimer = testMocked.restartInactivityTimer
-  testMocked = nil
-
-  testOutput = nil
-  testDoAfter = nil
-
-  keyWatcher = nil
-end
-
-function obj:testSetContext(expansions)
-  assert(testMocked, "Test mode must be enabled to set a context")
-  self.expansions = expansions
-  init(self)
-end
-
-function obj:testRun(input, expected, repeatlength)
-  assert(testMocked, "Test mode must be enabled to run a test")
-  assert(self.expansions, "A context must be set before running a test")
-  repeatlength = repeatlength or string.len(input)
-  testOutput = {}
-  testDoAfter = nil
-  resetAbbreviation()
-  local getFlags = {cmd = false}
-  local ev = {
-    getKeyCode = function() return " " end,
-    getFlags = function() return getFlags end,
-  }
-  local charsSent = 0
-  local function sendchar(char)
-    if charsSent >= repeatlength then return end
-    ev.getCharacters = function() return char end
-    local eat = handleEvent(self, ev)
-    if not eat then
-      testOutput[#testOutput+1] = char
-    end
-    if testDoAfter then
-      testDoAfter()
-      testDoAfter = nil
-    end
-    charsSent = charsSent + 1
-  end
-
-  while (charsSent < repeatlength) do
-    string.gsub(input, ".", sendchar)
-  end
-
-  assert(testDoAfter == nil, "Must be no remaining delayed calls")
-  testOutput = table.concat(testOutput)
-  assert(not expected or expected == testOutput,
-    ("Output for input \"%s\": Expected: \"%s\", actual: \"%s\""):format(input, expected, testOutput))
-end
-
-
-function obj:runtests()
-  local tests = dofile(obj.spoonPath.."/tests.lua")
-  local failures = tests.runtests(self)
-  tests.testPerformance(self)
-  return failures
 end
 
 return obj

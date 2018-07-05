@@ -7,7 +7,14 @@ local counter = function() -- closure for function tests
   end
 end
 
-local settings = {
+local function concatTables(t1,t2)
+  for i=1,#t2 do
+    t1[#t1+1] = t2[i]
+  end
+  return t1
+end
+
+local hotstringTests = {
   {
     title = "empty set",
     expansions = {},
@@ -358,30 +365,115 @@ local settings = {
   },
 }
 
-function getTextExpansion()
-  -- being run from the command line; mock appropriately and set up the module ourselves
+local testDeferredAction
+local function testDefer(func)
+  assert(not testDeferredAction, "Only one deferred action at a time")
+  testDeferredAction = func
+end
+
+local function testResolveDeferred()
+  if testDeferredAction then
+    testDeferredAction()
+    testDeferredAction = nil
+  end
+end
+
+local testMocked
+local function setMocks()
+  assert(not testMocked, "Can't setup tests twice!")
+  testMocked = {
+    hs = hs,
+  }
   hs = {
+    eventtap = {
+      keyStrokes = function(str) -- add strokes to output
+        testOutput[#testOutput+1] = str
+      end,
+      keyStroke = function() -- remove strokes from output
+        if testOutput[#testOutput]:len() == 1 then
+          testOutput[#testOutput] = nil
+        else
+          testOutput[#testOutput] = testOutput[#testOutput]:sub(1,-2)
+        end
+      end,
+      new = function() return { stop = function() end, start = function() end } end,
+      event = { types = { keyDown = nil } },
+    },
     keycodes = {
       map = setmetatable({}, {__index = function() return 1 end}) -- shameless mock
     },
-    timer = {},
+    timer = {
+      doAfter = function(_, func) testDefer(func) end,
+    },
   }
-  return require('init')
 end
 
-function obj.runtests(TextExpansion)
-  if not TextExpansion then TextExpansion = getTextExpansion() end
-  TextExpansion:testSetup()
-  print("Running tests...")
+-- not currently called
+local function unsetMocks()
+  assert(testMocked, "Test mode must already be set up to tear it down")
+  hs = testMocked.hs
+  testMocked = nil
+end
+
+local function getTextExpansion()
+  setMocks()
+  local te = require('init')
+  te.timeoutSeconds = 0 -- disable timeout doAfters
+  return te
+end
+
+local function testSetContext(te, expansions)
+  assert(testMocked, "Test mode must be enabled to set a context")
+  te.expansions = expansions
+  te:init()
+end
+
+local function testRun(te, input, expected, repeatlength)
+  assert(testMocked, "Test mode must be enabled to run a test")
+  assert(te.expansions, "A context must be set before running a test")
+  repeatlength = repeatlength or string.len(input)
+  testOutput = {}
+  testDoAfter = nil
+  te:resetAbbreviation()
+  local getFlags = {cmd = false}
+  local ev = {
+    getKeyCode = function() return " " end,
+    getFlags = function() return getFlags end,
+  }
+  local charsSent = 0
+  local function sendchar(char)
+    if charsSent >= repeatlength then return end
+    ev.getCharacters = function() return char end
+    local eat = te:handleEvent(ev)
+    if not eat then
+      testOutput[#testOutput+1] = char
+    end
+    testResolveDeferred()
+    charsSent = charsSent + 1
+  end
+
+  while (charsSent < repeatlength) do
+    string.gsub(input, ".", sendchar)
+  end
+
+  assert(testDoAfter == nil, "Must be no remaining delayed calls")
+  testOutput = table.concat(testOutput)
+  assert(not expected or expected == testOutput,
+    ("Output for input \"%s\": Expected: \"%s\", actual: \"%s\""):format(input, expected, testOutput))
+end
+
+local function runHotstringTests(te)
   local failed = {}
-  for i=1,#settings do
-    local setting = settings[i]
-    TextExpansion:testSetContext(setting.expansions)
+  print("Running hostring tests...")
+  for i=1,#hotstringTests do
+    local setting = hotstringTests[i]
+    testSetContext(te, setting.expansions)
     for j=1,#(setting.cases or {}) do
       local case = setting.cases[j]
       print(("%s: %s"):format(setting.title or "anonymous", case.title or "anonymous"))
       local status, err = pcall(function()
-        TextExpansion:testRun(
+        testRun(
+          te,
           case.input or case[1],
           case.expected or case[2]
         )
@@ -392,19 +484,25 @@ function obj.runtests(TextExpansion)
       end
     end
   end
-  TextExpansion:testTeardown()
+  return failed
+end
+
+function obj.runtests()
+  local te = getTextExpansion()
+  local failed = {}
+  failed = concatTables(failed, runHotstringTests(te))
   print("Tests complete.")
   if #failed > 0 then
     print(("%d failed."):format(#failed))
   else
     print("All passed.")
   end
+  unsetMocks()
   return failed
 end
 
-function obj.testPerformance(TextExpansion)
-  if not TextExpansion then TextExpansion = getTextExpansion() end
-  TextExpansion:testSetup()
+function obj.testPerformance(te)
+  local te = getTextExpansion()
 
   -- parameters
   local expansionsSizes = {
@@ -437,7 +535,7 @@ function obj.testPerformance(TextExpansion)
     for _=1,attempts do
       collectgarbage()
       local initStart = os.clock()
-      TextExpansion:testSetContext(testExpansions)
+      te.expansions = testExpansions
       local initEnd = os.clock()
       print(("init, %d, %f"):format(
         testExpansionsSize,
@@ -450,7 +548,7 @@ function obj.testPerformance(TextExpansion)
       for _=1,attempts do
         collectgarbage()
         local inputStart = os.clock()
-        TextExpansion:testRun(testInput, nil, testInputSize)
+        testRun(te, testInput, nil, testInputSize)
         local inputEnd = os.clock()
         print(("input, %d, %d, %f"):format(
           testExpansionsSize,
@@ -459,9 +557,9 @@ function obj.testPerformance(TextExpansion)
         ))
       end
     end
-    TextExpansion:stop()
+    te:stop()
   end
-  TextExpansion:testTeardown()
+  unsetMocks()
 end
 
 return obj
