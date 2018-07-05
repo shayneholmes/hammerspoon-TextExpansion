@@ -131,12 +131,14 @@ function DfaFactory:generatestate(expansions, transitions)
       self.queue:pushright(v)
     end
   end
-  local best -- highest priority
-  for i=1,#expansions do
-    local x = expansions[i]
-    if x and x:takesPriorityOver(best) then best = x end
+  if #expansions > 0 then
+    local best = expansions[1] -- highest priority
+    for i=2,#expansions do
+      local x = expansions[i]
+      if x:takesPriorityOver(best) then best = x end
+    end
+    state.expansion = best
   end
-  state.expansion = best
   return state
 end
 
