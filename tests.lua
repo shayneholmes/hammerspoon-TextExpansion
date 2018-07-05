@@ -14,6 +14,14 @@ local function concatTables(t1,t2)
   return t1
 end
 
+local apiTests = {
+  {
+    title = "doesn't start without init",
+    func = function(te) te:start() end,
+    err = false,
+  }
+}
+
 local hotstringTests = {
   {
     title = "empty set",
@@ -462,6 +470,28 @@ local function testRun(te, input, expected, repeatlength)
     ("Output for input \"%s\": Expected: \"%s\", actual: \"%s\""):format(input, expected, testOutput))
 end
 
+local function runApiTests(te)
+  local failed = {}
+  print("Running API tests...")
+  for i=1,#apiTests do
+    local case = apiTests[i]
+    local caseTitle = case.title or "anonymous"
+    print(("%s"):format(caseTitle))
+    local func = case.func or function() end
+    local errorExpected = not not case.err
+    local status, err = pcall(func, te)
+    local errorReceived = not status
+    if errorReceived ~= errorExpected then
+      local expected, actual
+      actual = err or "no error"
+      if errorExpected then expected = "an error" else expected = "no error" end
+      print(("Failed: expected %s, got '%s'"):format(expected, actual))
+      failed[#failed+1] = caseTitle
+    end
+  end
+  return failed
+end
+
 local function runHotstringTests(te)
   local failed = {}
   print("Running hostring tests...")
@@ -490,6 +520,7 @@ end
 function obj.runtests()
   local te = getTextExpansion()
   local failed = {}
+  failed = concatTables(failed, runApiTests(te))
   failed = concatTables(failed, runHotstringTests(te))
   print("Tests complete.")
   if #failed > 0 then
