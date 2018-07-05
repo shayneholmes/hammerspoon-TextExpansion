@@ -467,11 +467,6 @@ local function getTextExpansion()
   return te
 end
 
-local function testSetContext(te, expansions)
-  assert(testMocked, "Test mode must be enabled to set a context")
-  te:setExpansions(expansions)
-end
-
 local function testRun(te, input, expected, repeatlength)
   assert(testMocked, "Test mode must be enabled to run a test")
   repeatlength = repeatlength or string.len(input)
@@ -536,7 +531,7 @@ local function runHotstringTests(te)
   te:init()
   for i=1,#hotstringTests do
     local setting = hotstringTests[i]
-    testSetContext(te, setting.expansions)
+    te:setExpansions(setting.expansions)
     for j=1,#(setting.cases or {}) do
       local case = setting.cases[j]
       print(("%s: %s"):format(setting.title or "anonymous", case.title or "anonymous"))
@@ -570,8 +565,9 @@ function obj.runtests()
   return failed
 end
 
-function obj.testPerformance(te)
+function obj.testPerformance()
   local te = getTextExpansion()
+  te:init()
 
   -- parameters
   local expansionsSizes = {
@@ -604,7 +600,7 @@ function obj.testPerformance(te)
     for _=1,attempts do
       collectgarbage()
       local initStart = os.clock()
-      testSetContext(testExpansions)
+      te:setExpansions(testExpansions)
       local initEnd = os.clock()
       print(("init, %d, %f"):format(
         testExpansionsSize,
@@ -626,7 +622,6 @@ function obj.testPerformance(te)
         ))
       end
     end
-    te:stop()
   end
   unsetMocks()
 end
