@@ -474,14 +474,16 @@ local function testRun(te, input, expected, repeatlength)
   testDoAfter = nil
   te:resetAbbreviation()
   local getFlags = {cmd = false}
+  local nextchar
   local ev = {
     getKeyCode = function() return " " end,
     getFlags = function() return getFlags end,
+    getCharacters = function() return nextchar end,
   }
   local charsSent = 0
   local function sendchar(char)
     if charsSent >= repeatlength then return end
-    ev.getCharacters = function() return char end
+    nextchar = char
     local eat = te:handleEvent(ev)
     if not eat then
       testOutput[#testOutput+1] = char
