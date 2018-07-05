@@ -412,7 +412,7 @@ end
 --- You must make any changes to `TextExpansion.expansions` and `TextExpansion.specialKeys` before this method is called; any further changes to them won't take effect until the watcher is started again.
 function obj:start()
   assert(initialized, "Must be initialized before running")
-  if keyWatcher ~= nil then
+  if keyWatcher:isEnabled() then
     print("Warning: watcher is already running! Restarting...")
     keyWatcher:stop()
   end
@@ -424,20 +424,23 @@ end
 --- Method
 --- Stop the keyboard event watcher.
 function obj:stop()
-  if keyWatcher == nil then
+  if not initialized then
+    print("Warning: Not initialized.")
+    return
+  end
+  if not keyWatcher:isEnabled() then
     print("Warning: watcher is already stopped!")
     return
   end
   if debug then print("Stopping keyboard event watcher.") end
   keyWatcher:stop()
-  keyWatcher = nil
 end
 
 --- TextExpansion:isEnabled()
 --- Method
 --- Returns true if the keyboard event watcher is configured and active.
 function obj:isEnabled()
-  return keyWatcher and keyWatcher:isEnabled()
+  return initialized and keyWatcher:isEnabled()
 end
 
 function obj:resetAbbreviation()

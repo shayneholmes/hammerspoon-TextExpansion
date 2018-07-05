@@ -21,8 +21,33 @@ local apiTests = {
     err = true,
   },
   {
+    title = "starting works after init",
+    func = function(te) te:init() te:start() end,
+    err = false,
+  },
+  {
     title = "starting twice in a row is fine",
     func = function(te) te:init() te:start() te:start() end,
+    err = false,
+  },
+  {
+    title = "no errors stopping before init",
+    func = function(te) te:stop() end,
+    err = false,
+  },
+  {
+    title = "no errors stopping before start",
+    func = function(te) te:init() te:stop() end,
+    err = false,
+  },
+  {
+    title = "stop works after start",
+    func = function(te) te:init() te:start() te:stop() end,
+    err = false,
+  },
+  {
+    title = "start works after stop",
+    func = function(te) te:init() te:start() te:stop() te:start() end,
     err = false,
   },
 }
@@ -409,7 +434,14 @@ local function setMocks()
           testOutput[#testOutput] = testOutput[#testOutput]:sub(1,-2)
         end
       end,
-      new = function() return { stop = function() end, start = function() end } end,
+      new = function()
+        local enabled = false
+        return {
+          stop = function() enabled = true end,
+          start = function() enabled = false end,
+          isEnabled = function() return enabled end,
+        }
+      end,
       event = { types = { keyDown = nil } },
     },
     keycodes = {
