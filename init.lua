@@ -381,6 +381,7 @@ function obj:setExpansions(expansions)
   local xs = generateExpansions(self, expansions)
   statemanager = StateManager.new(xs, isEndChar, maxStatesUndo, debug)
   resetAbbreviation()
+  return self
 end
 
 --- TextExpansion:init()
@@ -395,6 +396,7 @@ function obj:init()
   keyWatcher = eventtap.new({ eventtap.event.types.keyDown }, function(ev) return self:handleEvent(ev) end)
   self:setExpansions({})
   initialized = true
+  return self
 end
 
 --- TextExpansion:start()
@@ -410,6 +412,7 @@ function obj:start()
   end
   if debug then print("Starting keyboard event watcher.") end
   keyWatcher:start()
+  return self
 end
 
 --- TextExpansion:stop()
@@ -418,14 +421,15 @@ end
 function obj:stop()
   if not initialized then
     print("Warning: Not initialized.")
-    return
+    return self
   end
   if not keyWatcher:isEnabled() then
     print("Warning: watcher is already stopped!")
-    return
+    return self
   end
   if debug then print("Stopping keyboard event watcher.") end
   keyWatcher:stop()
+  return self
 end
 
 --- TextExpansion:isEnabled()
@@ -437,6 +441,7 @@ end
 
 function obj:resetAbbreviation()
   resetAbbreviation()
+  return self
 end
 
 function obj:setDebug(val)
@@ -445,6 +450,7 @@ function obj:setDebug(val)
   else
     debug = false
   end
+  return self
 end
 
 return obj

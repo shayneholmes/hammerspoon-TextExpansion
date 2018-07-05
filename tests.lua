@@ -22,12 +22,12 @@ local apiTests = {
   },
   {
     title = "starting works after init",
-    func = function(te) te:init() te:start() end,
+    func = function(te) te:init():start() end,
     err = false,
   },
   {
     title = "starting twice in a row is fine",
-    func = function(te) te:init() te:start() te:start() end,
+    func = function(te) te:init():start():start() end,
     err = false,
   },
   {
@@ -37,17 +37,17 @@ local apiTests = {
   },
   {
     title = "no errors stopping before start",
-    func = function(te) te:init() te:stop() end,
+    func = function(te) te:init():stop() end,
     err = false,
   },
   {
     title = "stop works after start",
-    func = function(te) te:init() te:start() te:stop() end,
+    func = function(te) te:init():start():stop() end,
     err = false,
   },
   {
     title = "start works after stop",
-    func = function(te) te:init() te:start() te:stop() te:start() end,
+    func = function(te) te:init():start():stop():start() end,
     err = false,
   },
 }
