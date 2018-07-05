@@ -123,9 +123,9 @@ obj.specialKeys = {
 
 --- TextExpansion.timeoutSeconds
 --- Variable
---- Length of time, in seconds, to wait before timeout.
+--- Length of time, in seconds, to wait before timeout. If no new events arrive in that time period, TextExpansion will forget the abbreviation underway.
 ---
---- If no new events arrive in that time period, TextExpansion will forget the abbreviation underway.
+--- A non-positive value disables the timeout functionality entirely.
 obj.timeoutSeconds = 10
 
 local maxAbbreviationLength = 40
@@ -277,6 +277,7 @@ local function resetAbbreviationTimeout()
 end
 
 local function restartInactivityTimer()
+  if timeoutSeconds <= 0 then return end
   if pendingTimer then pendingTimer:stop() end
   pendingTimer = doAfter(timeoutSeconds, function() resetAbbreviationTimeout() end)
 end
