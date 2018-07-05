@@ -453,7 +453,6 @@ local function setMocks()
   }
 end
 
--- not currently called
 local function unsetMocks()
   assert(testMocked, "Test mode must already be set up to tear it down")
   hs = testMocked.hs
