@@ -111,11 +111,9 @@ local maxStatesUndo = 10
 local initialized = false
 local buffer
 local debug
-local trie
 local keyWatcher
 local keyActions -- generated on start() from specialKeys
 local statemanager -- generated on start()
-local abbreviation
 local pendingTimer
 local timeoutSeconds
 
