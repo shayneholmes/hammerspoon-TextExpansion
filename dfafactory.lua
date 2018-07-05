@@ -36,18 +36,21 @@ local List = dofile(spoonPath.."/list.lua")
 local makeCounter = dofile(spoonPath.."/counter.lua")
 local Dfa = dofile(spoonPath.."/dfa.lua")
 
-local biggestkey = ""
+local biggestkey = 0
 
+local max = 2^61-1
+local hashmult = nil -- set below once trie size is known
 function DfaFactory:getkey(nodecollection)
   -- each Trie has a "value" key that is numeric and unique
-  -- this function returns a value unique and consistent for a set of nodes
-  local ids = {}
+  -- this function returns a value that is probably unique, and consistent for a set of nodes
+  -- assumes that nodes fall in the same order each time, which seems to hold based on hierarchical nature of trees
+  -- if the node order changes, the outcome is that more DFA states will be created than necessary
+  local key = 0
   for i=1,#nodecollection do
-    ids[#ids+1] = nodecollection[i].value
+    key = key * hashmult + nodecollection[i].value
+    while key > max do key = key - max end
   end
-  table.sort(ids)
-  local key = table.concat(ids, ":")
-  if #key > #biggestkey then biggestkey = key end
+  if key > biggestkey then biggestkey = key end
   return key
 end
 
@@ -152,6 +155,7 @@ function DfaFactory.create(trieset, isEndChar, debug)
     wordboundary = trieset.wordboundary,
     isEndChar = isEndChar,
   }
+  hashmult = trieset.wordboundary.getnextvalue() -- a bit of an abuse
   self = setmetatable(self, DfaFactory)
 
   local boundaryset = { self.wordboundary }
