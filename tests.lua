@@ -505,10 +505,11 @@ local function testRun(te, input, expected, repeatlength)
     ("Output for input \"%s\": Expected: \"%s\", actual: \"%s\""):format(input, expected, testOutput))
 end
 
-local function runApiTests(te)
+local function runApiTests()
   local failed = {}
   print("Running API tests...")
   for i=1,#apiTests do
+    local te = getTextExpansion()
     local case = apiTests[i]
     local caseTitle = case.title or "anonymous"
     print(("%s"):format(caseTitle))
@@ -523,6 +524,7 @@ local function runApiTests(te)
       print(("Failed: expected %s, got '%s'"):format(expected, actual))
       failed[#failed+1] = caseTitle
     end
+    unsetMocks()
   end
   return failed
 end
@@ -530,6 +532,8 @@ end
 local function runHotstringTests(te)
   local failed = {}
   print("Running hostring tests...")
+  local te = getTextExpansion()
+  te:init()
   for i=1,#hotstringTests do
     local setting = hotstringTests[i]
     testSetContext(te, setting.expansions)
@@ -549,21 +553,20 @@ local function runHotstringTests(te)
       end
     end
   end
+  unsetMocks()
   return failed
 end
 
 function obj.runtests()
-  local te = getTextExpansion()
   local failed = {}
-  failed = concatTables(failed, runApiTests(te))
-  failed = concatTables(failed, runHotstringTests(te))
+  failed = concatTables(failed, runApiTests())
+  failed = concatTables(failed, runHotstringTests())
   print("Tests complete.")
   if #failed > 0 then
     print(("%d failed."):format(#failed))
   else
     print("All passed.")
   end
-  unsetMocks()
   return failed
 end
 
