@@ -20,7 +20,7 @@ function StateManager:getgroupid(x)
   return groupid
 end
 
-function StateManager.new(expansions, isEndChar, maxStatesUndo, debug)
+function StateManager.new(expansions, isEndChar, maxStatesUndo)
   local self = {
     dfas = {}, -- a group of DFAs to coordinate
   }
@@ -36,9 +36,9 @@ function StateManager.new(expansions, isEndChar, maxStatesUndo, debug)
   end
   for k,expansions in pairs(expansiongroups) do
     local homogenizecase = (k == StateManager.CASE_INSENSITIVE_GROUP)
-    local trieset = Trie.createtrieset(expansions, homogenizecase, debug)
-    local states = DfaFactory.create(trieset, isEndChar, debug)
-    local dfa = Dfa.new(states, homogenizecase, isEndChar, maxStatesUndo, debug)
+    local trieset = Trie.createtrieset(expansions, homogenizecase)
+    local states = DfaFactory.create(trieset, isEndChar)
+    local dfa = Dfa.new(states, homogenizecase, isEndChar, maxStatesUndo)
     self.dfas[#self.dfas+1] = dfa
   end
   return self

@@ -47,7 +47,6 @@ function Dfa:followedge(charcode)
       charcode = c
     end
   end
-  if self.debug then print(("Char %s, code %s"):format(str,charcode)) end
   local nextstate = self.dfa[self.state].transitions[charcode] -- follow any explicit transition
   if nextstate == nil then -- no explicit transition
     local fallback = Dfa.INTERNAL_NODE
@@ -63,17 +62,15 @@ function Dfa:followedge(charcode)
       nextstate = self.dfa[Dfa.INTERNAL_NODE].transitions[charcode] or fallback
     end
   end
-  if self.debug then print(( "%d -> %s -> %d" ):format(self.state, str, nextstate)) end
 
   self:selectstate(nextstate)
 end
 
-function Dfa.new(states, homogenizecase, isEndChar, maxStatesUndo, debug)
+function Dfa.new(states, homogenizecase, isEndChar, maxStatesUndo)
   assert(states, "Must provide states")
   assert(type(isEndChar) == "function", "Must pass in a function to identify end characters")
   assert(maxStatesUndo, "Must pass in a number of states to save")
   local self = {
-    debug = not not debug,
     dfa = states,
     homogenizecase = homogenizecase,
     isEndChar = isEndChar,

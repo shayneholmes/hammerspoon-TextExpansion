@@ -34,8 +34,6 @@ function CircularBuffer:init(size)
   self.array = {}
   self.head = 1
   self.count = 0
-  self.debug = false -- set to true to get debug spew
-  if self.debug then self:asserts() end
 end
 
 function CircularBuffer:getHead()
@@ -53,8 +51,6 @@ function CircularBuffer:getEnding(length)
     slice[#slice+1] = self.array[cur]
     cur = self:inc(cur)
   end
-  if self.debug then assert(cur == self.head) end
-  if self.debug then self:asserts() end
   return slice
 end
 
@@ -68,7 +64,6 @@ function CircularBuffer:push(data)
   if self.count < self.bufferSize then
     self.count = self.count + 1
   end
-  if self.debug then self:asserts() end
 end
 
 function CircularBuffer:pop()
@@ -77,17 +72,14 @@ function CircularBuffer:pop()
   end
   self.head = self:dec(self.head)
   self.count = self.count - 1
-  if self.debug then self:asserts() end
   return self.array[self.head]
 end
 
 function CircularBuffer:clear()
   self.count = 0
-  if self.debug then self:asserts() end
 end
 
 function CircularBuffer:size()
-  if self.debug then self:asserts() end
   return self.count
 end
 
