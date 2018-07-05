@@ -152,14 +152,8 @@ local function expansion_gt(x1, x2)
 end
 
 local function generateExpansions(self, xs)
-  -- lock down defaults so they can't change midstream (because that would be crazy)
-  local expansion_fallback = {
-    takesPriorityOver = expansion_gt,
-  }
-  for k,v in pairs(self.defaults) do
-    expansion_fallback[k] = v
-  end
-  local expansion_metatable = { __index = expansion_fallback }
+  self.defaults.takesPriorityOver = expansion_gt -- this comparison needs to be in there, regardless of what defaults have been set
+  local expansion_metatable = { __index = self.defaults }
   local expansions = {}
   for k,v in pairs(xs) do
     if type(v) ~= "table" then
