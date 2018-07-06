@@ -62,6 +62,7 @@ function DfaFactory:getsetnumber(nodecollection)
   if new then -- add it
     set = self.getnextsetnumber()
     self.setnumbers[key] = set
+    if self.debug then print(("New node's key: %s"):format(key)) end
   end
   return set, new
 end
@@ -110,6 +111,7 @@ function DfaFactory:combinenodes(nodes)
       end
       transitions[k][#transitions[k]+1] = v
       if self.isEndChar(k) then -- also consider word boundaries starting here
+        if self.debug then print(("End char %s (%s)"):format(key,k)) end
         transitions[k][#transitions[k]+1] = self.wordboundary
       end
     end
@@ -141,11 +143,12 @@ function DfaFactory:generatestate(expansions, transitions)
 end
 
 -- Return a DFA based on the NFA represented by the trie set
-function DfaFactory.create(trieset, isEndChar)
+function DfaFactory.create(trieset, isEndChar, debug)
   assert(trieset and trieset.wordboundary and trieset.internals, "Trie set must have word boundaries and internals.")
   assert(type(isEndChar) == "function", "Must pass in a function to identify end characters")
 
   local self = {
+    debug = not not debug,
     getnextsetnumber = makeCounter(),
     states = {}, -- states[i] for i=1,n is a table containing set ID values, keyed by characters
     setnumbers = {}, -- temporary table to hold set numbers by key (only used in construction)
@@ -170,6 +173,9 @@ function DfaFactory.create(trieset, isEndChar)
     local activeset = self:getsetnumber(nodes)
     self.states[activeset] = state
   end
+  if self.debug then print(("Biggest key: %s"):format(biggestkey)) end
+  if self.debug then print(("Nodes: %s"):format(#self.states)) end
+  if self.debug then self:print() end
 
   return self.states
 end

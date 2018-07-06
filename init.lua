@@ -110,6 +110,7 @@ local maxStatesUndo = 10
 -- Internal variables
 local initialized = false
 local buffer
+local debug
 local keyWatcher
 local keyActions -- generated on start() from specialKeys
 local statemanager -- generated on start()
@@ -202,7 +203,14 @@ local function getAbbreviation(x)
   local length = #x.abbreviation
   if x.waitforcompletionkey then length = length + 1 end
   local actual = utf8.char(table.unpack(buffer:getEnding(length)))
+  if debug then print(("Abbreviation interpreted: %s -> %s"):format(x.abbreviation,actual)) end
   return actual
+end
+
+local function debugTable(table)
+  if debug and table then
+    for k,v in pairs(table) do print(string.format("%s -> %s", k, v)) end
+  end
 end
 
 local function sendBackspaces(expansion)
@@ -228,6 +236,7 @@ local function generateKeystrokes(expansion)
 end
 
 local function resetAbbreviationTimeout()
+  if debug then print("timed out") end
   resetAbbreviation()
 end
 
@@ -333,12 +342,14 @@ function obj:handleEvent(ev)
       local expansion = statemanager:getMatchingExpansion()
       if expansion then
         hydrateexpansion(expansion)
+        debugTable(expansion)
         processexpansion(expansion)
         eatAction = eatAction or not expansion.sendcompletionkey -- true if any are true
         if expansion.resetrecognizer then resetAbbreviation() end
       end
     end
   end
+  if debug then printBuffer() end
   return eatAction
 end
 
@@ -368,7 +379,7 @@ end
 --- ```
 function obj:setExpansions(expansions)
   local xs = generateExpansions(self, expansions)
-  statemanager = StateManager.new(xs, isEndChar, maxStatesUndo)
+  statemanager = StateManager.new(xs, isEndChar, maxStatesUndo, debug)
   resetAbbreviation()
   return self
 end
@@ -399,6 +410,7 @@ function obj:start()
     print("Warning: watcher is already running! Restarting...")
     keyWatcher:stop()
   end
+  if debug then print("Starting keyboard event watcher.") end
   keyWatcher:start()
   return self
 end
@@ -415,6 +427,7 @@ function obj:stop()
     print("Warning: watcher is already stopped!")
     return self
   end
+  if debug then print("Stopping keyboard event watcher.") end
   keyWatcher:stop()
   return self
 end
@@ -428,6 +441,15 @@ end
 
 function obj:resetAbbreviation()
   resetAbbreviation()
+  return self
+end
+
+function obj:setDebug(val)
+  if val then
+    debug = true
+  else
+    debug = false
+  end
   return self
 end
 

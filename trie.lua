@@ -73,7 +73,7 @@ function Trie:print()
   self:print_helper(0)
 end
 
-function Trie.createtrieset(expansions, homogenizecase)
+function Trie.createtrieset(expansions, homogenizecase, debug)
   local trieset = {}
   trieset.wordboundary = Trie.new()
   trieset.internals = trieset.wordboundary:new() -- tie counters together
@@ -83,6 +83,7 @@ function Trie.createtrieset(expansions, homogenizecase)
     local exp = expansions[i]
     local abbr = exp.abbreviation
     -- add each abbreviation to the appropriate trie with exp at its leaf
+    if debug then print(("Inserting abbreviation %s with expansion %s"):format(abbr, exp)) end
     if homogenizecase then
       abbr = string.lower(abbr)
     end
@@ -101,6 +102,8 @@ function Trie.createtrieset(expansions, homogenizecase)
     end
     cur:addentry(keys,exp)
   end
+  if debug then print("Word boundaries:") trieset.wordboundary:print() end
+  if debug then print("Internals") trieset.internals:print() end
   return trieset
 end
 
