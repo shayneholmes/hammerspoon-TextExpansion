@@ -1,4 +1,4 @@
-List = {}
+local List = {}
 List.__index = List
 function List.new ()
   local self = setmetatable({first = 0, last = -1}, List)

@@ -1,7 +1,7 @@
 -- Use a provided DFA to manage state and report back any expansions that
 -- are in the active state
 
-Dfa = {}
+local Dfa = {}
 Dfa.__index = Dfa
 
 Dfa.WORDBOUNDARY_NODE = 1

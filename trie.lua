@@ -2,7 +2,7 @@
 
 -- Each node in a trie set has a unique value, numbered densely starting at 1
 
-Trie = {}
+local Trie = {}
 Trie.__index = Trie
 
 Trie.COMPLETION = "_completion"
@@ -23,7 +23,7 @@ function Trie:new()
   else
     counter = makeCounter()
   end
-  new = {
+  local new = {
     value = counter(),
     transitions = {},
     expansions = {},
@@ -90,7 +90,7 @@ function Trie.createtrieset(expansions, homogenizecase, debug)
     else
       cur = trieset.wordboundary
     end
-    keys = {}
+    local keys = {}
     for p,c in utf8.codes(abbr) do
       keys[#keys+1] = c
     end

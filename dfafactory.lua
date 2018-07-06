@@ -23,7 +23,7 @@
 -- doesn't exist. When the transition isn't found, the caller needs to check
 -- the internal transitions as well.
 
-DfaFactory = {}
+local DfaFactory = {}
 DfaFactory.__index = DfaFactory
 
 local function script_path()

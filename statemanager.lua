@@ -1,4 +1,4 @@
-StateManager = {}
+local StateManager = {}
 StateManager.__index = StateManager
 
 local function script_path()
@@ -8,6 +8,7 @@ end
 local spoonPath = script_path()
 
 local Trie = dofile(spoonPath.."/trie.lua")
+local Dfa = dofile(spoonPath.."/dfa.lua")
 local DfaFactory = dofile(spoonPath.."/dfafactory.lua")
 
 StateManager.CASE_INSENSITIVE_GROUP = 2
