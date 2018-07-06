@@ -33,16 +33,13 @@ function Trie:new()
   return new
 end
 
-function Trie:createtransition(k)
-  if k == nil then return end
-  if self.transitions[k] == nil then self.transitions[k] = self:new() end
-  return self.transitions[k]
-end
-
 function Trie:addentry(keys, value)
   local cur = self
   for i=1,#keys do
-    cur = cur:createtransition(keys[i])
+    local k = keys[i]
+    assert(k ~= nil)
+    if cur.transitions[k] == nil then cur.transitions[k] = cur:new() end
+    cur = cur.transitions[k]
   end
   if cur.expansions == nil then cur.expansions = {} end
   cur.expansions[#cur.expansions + 1] = value
