@@ -37,9 +37,9 @@ function StateManager.new(expansions, isEndChar, maxStatesUndo, debug)
   end
   for k,expansions in pairs(expansiongroups) do
     local homogenizecase = (k == StateManager.CASE_INSENSITIVE_GROUP)
-    local trieset = Trie.createtrieset(expansions, homogenizecase, debug)
-    local states = DfaFactory.create(trieset, isEndChar, debug)
-    local dfa = Dfa.new(states, homogenizecase, isEndChar, maxStatesUndo, debug)
+    local trie = Trie.createtrie(expansions, homogenizecase, isEndChar, debug)
+    -- local states = DfaFactory.create(trieset, isEndChar, debug)
+    local dfa = Dfa.new(trie, homogenizecase, isEndChar, maxStatesUndo, debug)
     self.dfas[#self.dfas+1] = dfa
   end
   return self

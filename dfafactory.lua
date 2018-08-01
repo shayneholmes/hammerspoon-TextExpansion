@@ -1,3 +1,5 @@
+-- TODO: Delete this
+--
 -- Make a deterministic finite automaton (DFA) out of tries representing an NFA
 
 -- The output is a table of states, where each state has:

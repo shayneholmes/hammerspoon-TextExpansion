@@ -1,3 +1,4 @@
+-- TODO: Rename to TrieWalker
 -- Use a provided DFA to manage state and report back any expansions that
 -- are in the active state
 
@@ -17,17 +18,23 @@ local circularbuffer = dofile(spoonPath.."/circularbuffer.lua")
 local Trie = dofile(spoonPath.."/trie.lua")
 
 function Dfa:getMatchingExpansion()
-  return self.dfa[self.state].expansion -- might be nil
+  -- return the expansion at the current node, or a suffix of it
+  local node = self.state
+  while not node.expansion and node.nextexpansion do
+    node = node.nextexpansion
+  end
+  if self.debug then print(("Evaluating expansion at node %s: %s"):format(self.state.address, node.expansion)) end
+  return node.expansion
 end
 
-function Dfa:clear()
+function Dfa:clear() -- TODO: Rename to reset
   self.states:clear()
-  self.state = Dfa.WORDBOUNDARY_NODE
+  self:selectstate(self.trie)
 end
 
 function Dfa:rewindstate()
   self.states:pop()
-  self.state = self.states:getHead() or Dfa.WORDBOUNDARY_NODE
+  self.state = self.states:getHead() or self.trie
 end
 
 function Dfa:selectstate(state)
@@ -38,7 +45,7 @@ end
 function Dfa:followedge(charcode)
   if self.isCompletion then -- reset after completions
     self.isCompletion = false
-    self:selectstate(Dfa.WORDBOUNDARY_NODE)
+    self:selectstate(self.trie)
   end
   local str = utf8.char(charcode)
   if self.homogenizecase then
@@ -48,40 +55,51 @@ function Dfa:followedge(charcode)
     end
   end
   if self.debug then print(("Char %s, code %s"):format(str,charcode)) end
-  local nextstate = self.dfa[self.state].transitions[charcode] -- follow any explicit transition
-  if nextstate == nil then -- no explicit transition
-    local fallback = Dfa.INTERNAL_NODE
+  local nextstate = nil -- this will be set to the next state
+  local node = self.state
+  while node.suffix and not node.transitions[charcode] do
+    node = node.suffix
+  end
+  if node.transitions[charcode] then -- exact match
+    nextstate = node.transitions[charcode]
+  else -- no match possible, so node points to the no-state node
     if self.isEndChar(charcode) then
-      -- check state for completions
-      nextstate = self.dfa[self.state].transitions[Trie.COMPLETION]
-      fallback = Dfa.WORDBOUNDARY_NODE -- if none, go to word boundary state
-      if nextstate ~= nil then
-        self.isCompletion = true -- go straight to word boundary state after this match
+      -- this end char might complete an abbreviation, and starts a new one either way
+      -- first, check current state and suffixes for completions that we should trigger
+      local cur = self.state
+      while cur and not cur.transitions[Trie.COMPLETION] do
+        cur = cur.suffix
       end
-    end
-    if nextstate == nil then
-      nextstate = self.dfa[Dfa.INTERNAL_NODE].transitions[charcode] or fallback
+      if cur then -- there is a completion; go to word boundary state, but after this
+        nextstate = cur.transitions[Trie.COMPLETION]
+        self.isCompletion = true
+      else
+        nextstate = self.trie -- no completion; reset to word boundary now
+      end
+    else
+      nextstate = node -- no-state node, so we can trigger internals
     end
   end
-  if self.debug then print(( "%d -> %s -> %d" ):format(self.state, str, nextstate)) end
 
+  if self.debug then print(( "%s -> %s -> %s" ):format(self.state.address, str, nextstate.address)) end
   self:selectstate(nextstate)
 end
 
-function Dfa.new(states, homogenizecase, isEndChar, maxStatesUndo, debug)
-  assert(states, "Must provide states")
+function Dfa.new(trie, homogenizecase, isEndChar, maxStatesUndo, debug)
+  assert(trie, "Must provide trie")
   assert(type(isEndChar) == "function", "Must pass in a function to identify end characters")
   assert(maxStatesUndo, "Must pass in a number of states to save")
   local self = {
     debug = not not debug,
-    dfa = states,
+    trie = trie,
     homogenizecase = homogenizecase,
     isEndChar = isEndChar,
-    state = Dfa.WORDBOUNDARY_NODE,
+    state = nil, -- set this in in clear
     states = circularbuffer.new(maxStatesUndo),
     isCompletion = false, -- variable to hold state: when we've completed, we stay in the completion state, but the next move goes from the word boundary root
   }
   self = setmetatable(self, Dfa)
+  self:clear()
   return self
 end
 

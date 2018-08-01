@@ -375,6 +375,56 @@ local hotstringTests = {
     }
   },
   {
+    title = "word boundaries mid-expansion",
+    expansions = {
+      ["aa-aa-aa"] = { expansion = "aaa", internal = false, },
+      ["aa-aab"] = { expansion = "bbb", internal = false, },
+      ["aac"] = { expansion = "ccc", internal = false, },
+      ["-aac"] = { expansion = "dashed", internal = false, },
+      ["-aab"] = { expansion = "dashed2", internal = true, },
+    },
+    cases = {
+      { title = "full",
+        input = "aa-aa-aa ", expected = "aaa " },
+      { title = "forked word boundary",
+        input = "aa-aa-aab ", expected = "aa-bbb " },
+      { title = "forked internal",
+        input = "aazzaa-aab ", expected = "aazzaadashed2 " },
+      { title = "forked",
+        input = "aa(aa-aab ", expected = "aa(bbb " },
+      { title = "forked with dashed",
+        input = "aa-aa--aac ", expected = "aa-aa-dashed " },
+      { title = "forked again",
+        input = "aa-aa-aac ", expected = "aa-aa-ccc " },
+      { title = "hidden",
+        input = "aa-aab ", expected = "bbb " },
+      { title = "hidden forked",
+        input = "aa-aac ", expected = "aa-ccc " },
+      { title = "dashed solo",
+        input = "-aac ", expected = "dashed " },
+      { title = "dashed after whitespace",
+        input = "test-aab ", expected = "testdashed2 " },
+      { title = "even hiddener",
+        input = "aac ", expected = "ccc " },
+    }
+  },
+  {
+    title = "find suffixes",
+    expansions = {
+      ["aaa"] = { expansion = "aaa", internal = false, },
+      ["aa"] = { expansion = "bbb", internal = true, },
+      ["a"] = { expansion = "ccc", internal = true, waitforcompletionkey = false, sendcompletionkey = false, },
+    },
+    cases = {
+      { title = "triggers shorter embedded in a longer",
+        input = "a ", expected = "ccc " },
+      { title = "triggers longer of the shorters",
+        input = "aa ", expected = "ccccbbb " },
+      { title = "triggers after items that aren't in the tree at all",
+        input = "azzaa ", expected = "ccczzccccbbb " },
+    }
+  },
+  {
     title = "consecutive expansions",
     expansions = {
       ["aaa"] = {
