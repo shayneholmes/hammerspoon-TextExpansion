@@ -18,13 +18,9 @@ local circularbuffer = dofile(spoonPath.."/circularbuffer.lua")
 local Trie = dofile(spoonPath.."/trie.lua")
 
 function Dfa:getMatchingExpansion()
-  -- return the expansion at the current node, or a suffix of it
-  local node = self.state
-  while not node.expansion and node.nextexpansion do
-    node = node.nextexpansion
-  end
-  if self.debug then print(("Evaluating expansion at node %s: %s"):format(self.state.address, node.expansion)) end
-  return node.expansion
+  -- return the expansion at the current node
+  -- the aggregation function in the trie has already checked suffixes
+  return self.state.expansion
 end
 
 function Dfa:clear() -- TODO: Rename to reset
