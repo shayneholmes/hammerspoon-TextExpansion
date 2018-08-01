@@ -55,9 +55,9 @@ function StateManager:getMatchingExpansion()
   return best
 end
 
-function StateManager:clear()
+function StateManager:reset()
   for i=1,#self.dfas do
-    self.dfas[i]:clear()
+    self.dfas[i]:reset()
   end
 end
 

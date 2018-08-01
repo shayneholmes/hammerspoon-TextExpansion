@@ -23,7 +23,7 @@ function Dfa:getMatchingExpansion()
   return self.state.expansion
 end
 
-function Dfa:clear() -- TODO: Rename to reset
+function Dfa:reset()
   self.states:clear()
   self:selectstate(self.trie)
 end
@@ -90,12 +90,12 @@ function Dfa.new(trie, homogenizecase, isEndChar, maxStatesUndo, debug)
     trie = trie,
     homogenizecase = homogenizecase,
     isEndChar = isEndChar,
-    state = nil, -- set this in in clear
+    state = nil, -- set this in in reset
     states = circularbuffer.new(maxStatesUndo),
     isCompletion = false, -- variable to hold state: when we've completed, we stay in the completion state, but the next move goes from the word boundary root
   }
   self = setmetatable(self, Dfa)
-  self:clear()
+  self:reset()
   return self
 end
 

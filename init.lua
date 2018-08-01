@@ -168,7 +168,7 @@ end
 
 local function resetAbbreviation()
   buffer:clear()
-  statemanager:clear()
+  statemanager:reset()
 end
 
 local function printBuffer()
