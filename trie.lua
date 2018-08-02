@@ -108,9 +108,10 @@ local function findSuffix(parent, child, key, isEndChar)
 end
 
 local function findNextExpansions(node)
+  if not node.suffix then return nil end
   node = node.suffix
   while node.suffix do
-    if node.expansion or node.expansions then
+    if node.expansion then
       return node
     end
     node = node.suffix
@@ -127,12 +128,12 @@ function Trie:decorateForAhoCorasick(isEndChar, debug)
     -- I've chosen to do this search breadth-first, after running into issues with DFS that remain undiagnosed
     local cur = queue:popleft()
     if debug then print(("Decorating node %s"):format(cur.address)) end
+    cur.nextexpansion = findNextExpansions(cur)
+    if debug and cur.nextexpansion then print(("NextExpansion of %s: %s"):format(cur.address, cur.suffix.address)) end
     aggregateExpansions(cur, debug)
     for key, child in pairs(cur.transitions or {}) do
       child.suffix = findSuffix(cur, child, key, isEndChar)
       if debug then print(("Suffix of %s: %s"):format(child.address, child.suffix.address)) end
-      child.nextexpansion = findNextExpansions(child)
-      if debug and child.nextexpansion then print(("NextExpansion of %s: %s"):format(child.address, child.suffix.address)) end
       queue:pushright(child)
     end
   end
