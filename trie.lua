@@ -125,7 +125,7 @@ function Trie:decorateForAhoCorasick(isEndChar, debug)
   local queue = List.new()
   queue:pushright(self)
   while not queue:empty() do
-    -- I've chosen to do this search breadth-first, after running into issues with DFS that remain undiagnosed
+    -- this search is done breadth-first, so that all possible strict suffixes have already been decorated already
     local cur = queue:popleft()
     if debug then print(("Decorating node %s"):format(cur.address)) end
     cur.nextexpansion = findNextExpansions(cur)
