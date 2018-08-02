@@ -180,7 +180,7 @@ function Trie.createtrie(expansions, homogenizecase, isEndChar, debug)
     end
     trie:addentry(keys, exp)
   end
-  if true then trie:decorateForDebug() end
+  if debug then trie:decorateForDebug() end
   trie:decorateForAhoCorasick(isEndChar, debug)
   if debug then print("Trie:") trie:print() end
   assert(trie.transitions[Trie.WORDBOUNDARY], "Ensure that we've created a word boundary node")
