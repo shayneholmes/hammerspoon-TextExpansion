@@ -39,29 +39,31 @@ function Trie:addentry(keys, value)
   cur.expansions[#cur.expansions + 1] = value
 end
 
-function Trie:print_helper(depth)
-  if self == nil then
-    return
+function Trie.get_label(t)
+  if t == Trie.COMPLETION then
+    return '(completion)'
   end
-  local preface = string.rep("-", depth)
-  for _, val in pairs(self.expansions or {self.expansion}) do
-    local out = val
-    if type(out) == "table" then out = out.expansion end
-    print(("%sEXPANSION: %s"):format(preface,out))
+  if t == Trie.WORDBOUNDARY then
+    return '(word-boundary)'
   end
-  for key, val in pairs(self.transitions or {}) do
-    local label = key
-    if type(label) == "number" then
-      label = utf8.char(label)
-    end
-    print(("%s%s"):format(preface,label))
-    val:print_helper(depth + 1)
-  end
+  return utf8.char(t)
 end
 
 function Trie:print()
-  print("Printing trie...")
-  self:print_helper(0)
+  if self == nil then
+    return
+  end
+  if not self.expansion and not self.expansions then
+    print(("%s"):format(self.address))
+  end
+  for _, val in pairs(self.expansions or {self.expansion}) do
+    local out = val
+    if type(out) == "table" then out = out.expansion end
+    print(("%s -> %s"):format(self.address,out))
+  end
+  for key, val in pairs(self.transitions or {}) do
+    val:print()
+  end
 end
 
 local function aggregateExpansions(node, debug)
@@ -144,10 +146,7 @@ end
 function Trie:decorateForDebug(prefix) -- this is expensive!
   self.address = prefix or "$"
   for key, child in pairs(self.transitions or {}) do
-    if type(key) == "number" then
-      key = utf8.char(key)
-    end
-    child:decorateForDebug(("%s.%s"):format(self.address, key))
+    child:decorateForDebug(("%s.%s"):format(self.address, Trie.get_label(key)))
   end
 end
 
@@ -176,7 +175,7 @@ function Trie.createtrie(expansions, homogenizecase, isEndChar, debug)
   end
   if debug then trie:decorateForDebug() end
   trie:decorateForAhoCorasick(isEndChar, debug)
-  if debug then print("Trie:") trie:print() end
+  if debug then trie:print() end
   assert(trie.transitions[Trie.WORDBOUNDARY], "Ensure that we've created a word boundary node")
   return trie.transitions[Trie.WORDBOUNDARY] -- this is the root, for all interpretation purposes
 end
