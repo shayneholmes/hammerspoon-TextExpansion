@@ -12,12 +12,6 @@ local spoonPath = script_path()
 local circularbuffer = dofile(spoonPath.."/circularbuffer.lua")
 local Trie = dofile(spoonPath.."/trie.lua")
 
-function TrieWalker:getMatchingExpansion()
-  -- return the expansion at the current node
-  -- the aggregation function in the trie has already checked suffixes
-  return self.expansion
-end
-
 function TrieWalker:reset()
   self.states:clear()
   self:selectstate(self.trie)
@@ -34,6 +28,7 @@ function TrieWalker:selectstate(state)
 end
 
 function TrieWalker:followedge(charcode)
+  -- analyze and maybe homogenize the character
   local isEndChar = self.isEndChar(charcode) -- save for later
   local str = utf8.char(charcode)
   if self.homogenizecase then
@@ -42,7 +37,7 @@ function TrieWalker:followedge(charcode)
       charcode = c
     end
   end
-  if self.debug then print(("Char %s, code %s"):format(str,charcode)) end
+  -- find the next state
   local nextstate = nil -- this will be set to the next state
   local node = self.state
   while node.suffix and not node.transitions[charcode] do
@@ -57,9 +52,10 @@ function TrieWalker:followedge(charcode)
       nextstate = node -- to the no-state, so we can trigger internals
     end
   end
+  -- compute the expansion; it's usually whatever's at the next state, but may not be if the char is an end char
   local expansionstate = nextstate
   if isEndChar then
-    -- this end char might complete an abbreviation; check current state and suffixes for completions that we should trigger
+    -- this end char might have completed an abbreviation; check current state and suffixes for completions that we should trigger
     local cur = self.state
     while cur and not cur.transitions[Trie.COMPLETION] do
       cur = cur.suffix
@@ -68,11 +64,11 @@ function TrieWalker:followedge(charcode)
       expansionstate = cur.transitions[Trie.COMPLETION]
     end
   end
-
+  -- change states and return the expansion (which may be nil)
   if self.debug then print(( "%s -> %s -> %s" ):format(self.state.address, str, nextstate.address)) end
   if self.debug and expansionstate.expansion then print(( "(expand %s to %s)" ):format(expansionstate.address, expansionstate.expansion)) end
-  self.expansion = expansionstate.expansion
   self:selectstate(nextstate)
+  return expansionstate.expansion
 end
 
 function TrieWalker.new(trie, homogenizecase, isEndChar, maxStatesUndo, debug)

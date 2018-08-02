@@ -351,8 +351,7 @@ function obj:handleEvent(ev)
   else
     for p, c in utf8.codes(ev:getCharacters()) do -- might be multiple chars, e.g. when deadkeys are enabled
       buffer:push(c)
-      statemanager:followedge(c)
-      local expansion = statemanager:getMatchingExpansion()
+      local expansion = statemanager:followedge(c)
       if expansion then
         hydrateexpansion(expansion)
         debugTable(expansion)

@@ -43,16 +43,6 @@ function StateManager.new(expansions, isEndChar, maxStatesUndo, debug)
   return self
 end
 
-function StateManager:getMatchingExpansion()
-  local best
-  for i=1,#self.walkers do
-    local trieWalker = self.walkers[i]
-    local x = trieWalker:getMatchingExpansion()
-    if x and x:takesPriorityOver(best) then best = x end
-  end
-  return best
-end
-
 function StateManager:reset()
   for i=1,#self.walkers do
     self.walkers[i]:reset()
@@ -66,9 +56,13 @@ function StateManager:rewindstate()
 end
 
 function StateManager:followedge(charcode)
+  local best
   for i=1,#self.walkers do
-    self.walkers[i]:followedge(charcode)
+    local trieWalker = self.walkers[i]
+    local x = trieWalker:followedge(charcode)
+    if x and x:takesPriorityOver(best) then best = x end
   end
+  return best
 end
 
 return StateManager
