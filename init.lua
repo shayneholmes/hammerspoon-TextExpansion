@@ -147,7 +147,8 @@ local function expansion_gt(x1, x2)
   -- case sensitive wins
   if x1.casesensitive ~= x2.casesensitive then return x1.casesensitive end
   -- or tie; undefined behavior (but with an error message)
-  print(("Error: can't differentiate between expansions '%s' and '%s'!"):format(x1.abbreviation, x2.abbreviation))
+  -- this happens more because we're comparing across nodes, and there may be duplicates
+  if debug then print(("Error: can't differentiate between expansions '%s' and '%s'!"):format(x1.abbreviation, x2.abbreviation)) end
   return false
 end
 
@@ -167,7 +168,7 @@ end
 
 local function resetAbbreviation()
   buffer:clear()
-  statemanager:clear()
+  statemanager:reset()
 end
 
 local function printBuffer()
