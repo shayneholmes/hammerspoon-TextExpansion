@@ -1,5 +1,7 @@
 local obj = {}
 
+local testprint = print -- save this so we can print messages even when we're not taking output from the code
+
 local counter = function() -- closure for function tests
   local counter = 0
   return function()
@@ -467,7 +469,9 @@ local function setMocks()
   assert(not testMocked, "Can't setup tests twice!")
   testMocked = {
     hs = hs,
+    print = print,
   }
+  print = function() end
   hs = {
     eventtap = {
       keyStrokes = function(str) -- add strokes to output
@@ -502,6 +506,7 @@ end
 local function unsetMocks()
   assert(testMocked, "Test mode must already be set up to tear it down")
   hs = testMocked.hs
+  print = testMocked.print
   testMocked = nil
 end
 
@@ -512,7 +517,7 @@ local function getTextExpansion()
   return te
 end
 
-local function testRun(te, input, expected, repeatlength)
+local function testRun(te, testname, input, expected, repeatlength)
   assert(testMocked, "Test mode must be enabled to run a test")
   repeatlength = repeatlength or string.len(input)
   testOutput = {}
@@ -544,17 +549,16 @@ local function testRun(te, input, expected, repeatlength)
   assert(testDoAfter == nil, "Must be no remaining delayed calls")
   testOutput = table.concat(testOutput)
   assert(not expected or expected == testOutput,
-    ("Output for input \"%s\": Expected: \"%s\", actual: \"%s\""):format(input, expected, testOutput))
+    ("%s (input \"%s\"): Expected: \"%s\", actual: \"%s\""):format(testname, input, expected, testOutput))
 end
 
 local function runApiTests()
   local failed = {}
-  print("Running API tests...")
+  testprint("Running API tests...")
   for i=1,#apiTests do
     local te = getTextExpansion()
     local case = apiTests[i]
     local caseTitle = case.title or "anonymous"
-    print(("%s"):format(caseTitle))
     local func = case.func or function() end
     local errorExpected = not not case.err
     local status, err = pcall(func, te)
@@ -563,7 +567,7 @@ local function runApiTests()
       local expected, actual
       actual = err or "no error"
       if errorExpected then expected = "an error" else expected = "no error" end
-      print(("Failed: expected %s, got '%s'"):format(expected, actual))
+      testprint(("%s Failed: expected %s, got '%s'"):format(caseTitle, expected, actual))
       failed[#failed+1] = caseTitle
     end
     unsetMocks()
@@ -573,7 +577,7 @@ end
 
 local function runHotstringTests(te)
   local failed = {}
-  print("Running hostring tests...")
+  testprint("Running hostring tests...")
   local te = getTextExpansion()
   te:init()
   for i=1,#hotstringTests do
@@ -581,16 +585,17 @@ local function runHotstringTests(te)
     te:setExpansions(setting.expansions)
     for j=1,#(setting.cases or {}) do
       local case = setting.cases[j]
-      print(("%s: %s"):format(setting.title or "anonymous", case.title or "anonymous"))
+      local testname = ("%s: %s"):format(setting.title or "anonymous", case.title or "anonymous")
       local status, err = pcall(function()
         testRun(
           te,
+          testname,
           case.input or case[1],
           case.expected or case[2]
         )
       end)
       if not status then
-        print(err)
+        testprint(err)
         failed[#failed+1] = err
       end
     end
@@ -603,11 +608,11 @@ function obj.runtests()
   local failed = {}
   failed = concatTables(failed, runApiTests())
   failed = concatTables(failed, runHotstringTests())
-  print("Tests complete.")
+  testprint("Tests complete.")
   if #failed > 0 then
-    print(("%d failed."):format(#failed))
+    testprint(("%d failed."):format(#failed))
   else
-    print("All passed.")
+    testprint("All passed.")
   end
   return failed
 end
