@@ -1,6 +1,7 @@
 local obj = {}
 
 local testprint = print -- save this so we can print messages even when we're not taking output from the code
+local testOutput
 
 local counter = function() -- closure for function tests
   local counter = 0
