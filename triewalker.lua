@@ -3,9 +3,6 @@
 local TrieWalker = {}
 TrieWalker.__index = TrieWalker
 
-TrieWalker.WORDBOUNDARY_NODE = 1
-TrieWalker.INTERNAL_NODE = 2
-
 local function script_path()
   local str = debug.getinfo(2, "S").source:sub(2)
   return str:match("(.*/)")
