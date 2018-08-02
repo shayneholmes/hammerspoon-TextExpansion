@@ -139,6 +139,8 @@ local function expansion_gt(x1, x2)
   local x1len = x1.abbreviation:len()
   local x2len = x2.abbreviation:len()
   if x1len ~= x2len then return x1len > x2len end
+  -- if the same length, word boundaries win over internals
+  if x1.internal ~= x2.internal then return not x1.internal end
   -- case sensitive wins
   if x1.casesensitive ~= x2.casesensitive then return x1.casesensitive end
   -- or tie; undefined behavior (but with an error message)
