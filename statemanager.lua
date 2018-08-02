@@ -9,7 +9,6 @@ local spoonPath = script_path()
 
 local Trie = dofile(spoonPath.."/trie.lua")
 local Dfa = dofile(spoonPath.."/dfa.lua")
-local DfaFactory = dofile(spoonPath.."/dfafactory.lua")
 
 StateManager.CASE_INSENSITIVE_GROUP = 2
 
@@ -38,7 +37,6 @@ function StateManager.new(expansions, isEndChar, maxStatesUndo, debug)
   for k,expansions in pairs(expansiongroups) do
     local homogenizecase = (k == StateManager.CASE_INSENSITIVE_GROUP)
     local trie = Trie.createtrie(expansions, homogenizecase, isEndChar, debug)
-    -- local states = DfaFactory.create(trieset, isEndChar, debug)
     local dfa = Dfa.new(trie, homogenizecase, isEndChar, maxStatesUndo, debug)
     self.dfas[#self.dfas+1] = dfa
   end
