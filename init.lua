@@ -128,22 +128,38 @@ end
 
 -- compare two expansions, and return true if the first one is "greater than" (higher precedence) the other
 local function expansion_gt(x1, x2)
-  -- strict equality isn't greater
+  -- x1 is guaranteed to exist, so if x2 is nil, this one wins; must be present to win!
+  if not x2 then return true end
+  -- strict equality is easy to check for and will save us some work
   if x1 == x2 then return false end
-  -- x1 is guaranteed to exist
-  -- if x2 is nil, this one wins
-  if not x2 then return true end -- must be present to win
-  -- higher priority wins
+  -- higher explicit priority wins
   if x1.priority ~= x2.priority then return x1.priority > x2.priority end
-  -- longer abbreviation wins
+  -- longer abbreviation wins (on the theory that they're more specific to a situation)
   local x1len = x1.abbreviation:len()
   local x2len = x2.abbreviation:len()
   if x1len ~= x2len then return x1len > x2len end
-  -- if the same length, word boundaries win over internals
+  -- abbreviation with a word boundary wins over internals
   if x1.internal ~= x2.internal then return not x1.internal end
   -- case sensitive wins
   if x1.casesensitive ~= x2.casesensitive then return x1.casesensitive end
-  -- or tie; undefined behavior (but with an error message)
+  -- so, abbreviations and config are the functionally the same (but see below for last-ditch efforts); let's try comparing expansions, first lexicographically by type
+  -- note that strings win over functions for now; maybe that's unfortunate
+  local x1type = type(x1.expansion)
+  local x2type = type(x2.expansion)
+  if x1type ~= x2type then return x1type > x2type end
+  -- expansion types are the same; let's try and compare expansion values
+  local status, ret = pcall(function() if x1.expansion ~= x2.expansion then return x1.expansion > x2.expansion end end)
+  if status then return ret end
+  -- non-comparable expansions (e.g. two functions), and functionally identical configs and abbreviations, but we haven't tried lexically comparing the abbreviations; that's at least consistent
+  local x1abbr = x1.abbreviation
+  local x2abbr = x2.abbreviation
+  if x1abbr ~= x2abbr then return x1abbr > x2abbr end
+  -- the expansion values weren't comparable (e.g. two functions); let's convert the values to strings we can compare
+  -- note that the comparison between functions is by address, which is non-deterministic across instances but at least consistent within a run
+  local x1str = ("%s"):format(x1.expansion)
+  local x2str = ("%s"):format(x2.expansion)
+  if x1str ~= x2str then return x1str > x2str end
+  -- now we *really* don't know what to do, since the abbreviation, expansion and config are the same; call them equal, which means their sort order is undefined behavior
   print(("Error: can't differentiate between expansions '%s' and '%s'!"):format(x1.abbreviation, x2.abbreviation))
   return false
 end

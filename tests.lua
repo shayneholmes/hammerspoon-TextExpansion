@@ -344,6 +344,12 @@ local hotstringTests = {
       ["cs1"] = { expansion = "insensitive", internal = true, casesensitive = false, },
       ["cs2"] = { expansion = "insensitive", priority = 1, internal = true, casesensitive = false, },
       ["CS2"] = { expansion = "sensitive", internal = true, casesensitive = true, },
+      maybefunc = function() return "function" end,
+      maybefunC = "string",
+      numstrinG = 3.14159,
+      numstring = "string",
+      lex = "zzHigher",
+      leX = "aaLower",
     },
     cases = {
       { title = "longer abbreviation wins",
@@ -360,6 +366,12 @@ local hotstringTests = {
         input = "Cs1 CS1 ", expected = "Insensitive sensitive " },
       { title = "higher priority wins over case sensitivity",
         input = "CS2 ", expected = "INSENSITIVE " }, -- case matching
+      { title = "On total collision of abbreviations, strings win over numbers",
+        input = "numstring ", expected = "string " },
+      { title = "On total collision of abbreviations, strings win over functions",
+        input = "maybefunc ", expected = "string " },
+      { title = "On total collision with same types, larger lexicographic order applied",
+        input = "lex ", expected = "zzHigher " },
     }
   },
   {
