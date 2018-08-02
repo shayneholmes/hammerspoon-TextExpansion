@@ -81,7 +81,7 @@ local function aggregateExpansions(node, debug)
     cur = cur.nextexpansion
   end
   node.expansion = best
-  if debug then print(("Expansion at %s: %s"):format(node.address, node.expansion)) end
+  if debug and node.expansion then print(("Expansion at %s: %s"):format(node.address, node.expansion.expansion)) end
   node.expansions = nil
 end
 
