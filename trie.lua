@@ -15,7 +15,7 @@ local spoonPath = script_path()
 local List = dofile(spoonPath.."/list.lua")
 
 -- create an empty trie node
-function Trie:new()
+function Trie.new()
   local new = {
     transitions = {},
     expansions = nil,
@@ -29,7 +29,7 @@ function Trie:addentry(keys, value)
   for i=1,#keys do
     local k = keys[i]
     assert(k ~= nil)
-    if cur.transitions[k] == nil then cur.transitions[k] = cur:new() end
+    if cur.transitions[k] == nil then cur.transitions[k] = Trie.new() end
     cur = cur.transitions[k]
   end
   if not value then return end
