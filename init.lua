@@ -135,6 +135,8 @@ end
 
 -- compare two expansions, and return true if the first one is "greater than" (higher precedence) the other
 local function expansion_gt(x1, x2)
+  -- strict equality isn't greater
+  if x1 == x2 then return false end
   -- x1 is guaranteed to exist
   -- if x2 is nil, this one wins
   if not x2 then return true end -- must be present to win
@@ -147,8 +149,7 @@ local function expansion_gt(x1, x2)
   -- case sensitive wins
   if x1.casesensitive ~= x2.casesensitive then return x1.casesensitive end
   -- or tie; undefined behavior (but with an error message)
-  -- this happens more because we're comparing across nodes, and there may be duplicates
-  if debug then print(("Error: can't differentiate between expansions '%s' and '%s'!"):format(x1.abbreviation, x2.abbreviation)) end
+  print(("Error: can't differentiate between expansions '%s' and '%s'!"):format(x1.abbreviation, x2.abbreviation))
   return false
 end
 
