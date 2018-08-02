@@ -215,10 +215,7 @@ local hotstringTests = {
       lower = "x",
       UPPER = "X",
       collision = "lower",
-      Collision = {
-        expansion = "upper",
-        casesensitive = true,
-      },
+      Collision = { expansion = "upper", casesensitive = true, },
     },
     cases = {
       {
@@ -246,43 +243,15 @@ local hotstringTests = {
   {
     title = "match case",
     expansions = {
-      btw = {
-        expansion = "by the way",
-        matchcase = true,
-      },
-      CASESENSITIVE = {
-        expansion = "case sensitive",
-        matchcase = true,
-        casesensitive = true,
-      },
-      [ "8ball" ] = {
-        expansion = "eight ball",
-        matchcase = true,
-      },
-      eightyfour = {
-        expansion = "8-four",
-        matchcase = true,
-      },
-      name = {
-        expansion = "Jefferson",
-        matchcase = true,
-      },
-      t = {
-        expansion = "test",
-        matchcase = true,
-      },
-      v = {
-        expansion = "test",
-        matchcase = true,
-      },
-      V = {
-        expansion = "TEST",
-        casesensitive = true,
-      },
-      ["80b"] = {
-        expansion = "test",
-        matchcase = true,
-      }
+      btw = { expansion = "by the way", matchcase = true },
+      CASESENSITIVE = { expansion = "case sensitive", matchcase = true, casesensitive = true },
+      [ "8ball" ] = { expansion = "eight ball", matchcase = true },
+      eightyfour = { expansion = "8-four", matchcase = true },
+      name = { expansion = "Jefferson", matchcase = true },
+      t = { expansion = "test", matchcase = true },
+      v = { expansion = "test", matchcase = true },
+      V = { expansion = "TEST", casesensitive = true },
+      ["80b"] = { expansion = "test", matchcase = true }
     },
     cases = {
       { title = "first caps",
@@ -321,10 +290,7 @@ local hotstringTests = {
   },
   { title = "internals starting with end chars",
     expansions = {
-      ["/yd"] = {
-        expansion = "yard",
-        internal = true,
-      },
+      ["/yd"] = { expansion = "yard", internal = true },
     },
     cases = {
       { title = "expands at word boundaries",
@@ -334,28 +300,12 @@ local hotstringTests = {
   {
     title = "collisions and precedence",
     expansions = {
-      ["/yd"] = {
-        expansion = "yard",
-        internal = true,
-      },
+      ["/yd"] = { expansion = "yard", internal = true },
       ["yd"] = "yesterday",
-      ["yard"] = {
-        expansion = "longer",
-        internal = true,
-      },
-      ["rd"] = {
-        expansion = "shorter",
-        internal = true,
-      },
-      ["yard1"] = {
-        expansion = "longer",
-        internal = true,
-      },
-      ["rd1"] = {
-        expansion = "shorter",
-        internal = true,
-        priority = 1,
-      },
+      ["yard"] = { expansion = "longer", internal = true },
+      ["rd"] = { expansion = "shorter", internal = true },
+      ["yard1"] = { expansion = "longer", internal = true },
+      ["rd1"] = { expansion = "shorter", internal = true, priority = 1 },
       ["word"] = { expansion = "inner", internal = true },
       ["Word"] = { expansion = "outer", internal = false },
       ["CS1"] = { expansion = "sensitive", internal = true, casesensitive = true, },
@@ -431,12 +381,7 @@ local hotstringTests = {
   {
     title = "consecutive expansions",
     expansions = {
-      ["aaa"] = {
-        expansion = "bbb",
-        internal = true,
-        waitforcompletionkey = false,
-        sendcompletionkey = false,
-      },
+    ["aaa"] = { expansion = "bbb", internal = true, waitforcompletionkey = false, sendcompletionkey = false },
     },
     cases = {
       { title = "just one",
