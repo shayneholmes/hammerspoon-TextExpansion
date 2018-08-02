@@ -88,17 +88,27 @@ local hotstringTests = {
         input = "doe snot tt ", expected = "does not test " },
       { title = "interruption on the word boundary",
         input = "doe tt ", expected = "doe test " },
+      { title = "abbreviations don't generalize end chars",
+        input = "doe-snot ", expected = "doe-snot " },
+      { title = "word boundaries do generalize end chars",
+        input = "doe-tt ", expected = "doe-test " },
     }
   },
   {
     title = "functions",
     expansions = {
-      counter = counter(),
       simple = function() return "output" end,
+      int = function() return 54 // 3 end,
+      float = function() return 54 / 3 end,
+      counter = counter(),
     },
     cases = {
-      { title = "function is called",
+      { title = "string function",
         input = "simple ", expected = "output " },
+      { title = "integer function",
+        input = "int ", expected = "18 " },
+      { title = "float function",
+        input = "float ", expected = "18.0 " },
       { title = "function is called each time it's referenced",
         input = "counter counter counter ", expected = "1 2 3 " },
     }
@@ -116,6 +126,11 @@ local hotstringTests = {
         waitforcompletionkey = false,
         sendcompletionkey = false,
       },
+      missingcompletion = {
+        expansion = "No space after me.",
+        waitforcompletionkey = true,
+        sendcompletionkey = false,
+      },
       ban = {
         expansion = "ana",
         waitforcompletionkey = false,
@@ -128,6 +143,8 @@ local hotstringTests = {
         input = "earlycomplete", expected = "Right away!e" },
       { title = "excludes completion key",
         input = "withoutcompletion", expected = "Right away!" },
+      { title = "excludes completion key even when waiting",
+        input = "missingcompletion ", expected = "No space after me." },
       { title = "endkey ordering",
         input = "ban", expected = "banana" },
     }
@@ -135,8 +152,6 @@ local hotstringTests = {
   {
     title = "flag combinations",
     expansions = {
-
-
       ["00000"] = { expansion = "X", internal = false, resetrecognizer = false, backspace = false, sendcompletionkey = false, waitforcompletionkey = false },
       ["00001"] = { expansion = "X", internal = false, resetrecognizer = false, backspace = false, sendcompletionkey = false, waitforcompletionkey = true  },
       ["00010"] = { expansion = "X", internal = false, resetrecognizer = false, backspace = false, sendcompletionkey = true , waitforcompletionkey = false },
@@ -169,7 +184,6 @@ local hotstringTests = {
       ["11101"] = { expansion = "X", internal = true , resetrecognizer = true , backspace = true , sendcompletionkey = false, waitforcompletionkey = true  },
       ["11110"] = { expansion = "X", internal = true , resetrecognizer = true , backspace = true , sendcompletionkey = true , waitforcompletionkey = false },
       ["11111"] = { expansion = "X", internal = true , resetrecognizer = true , backspace = true , sendcompletionkey = true , waitforcompletionkey = true  },
-
     },
     cases = {
       {
@@ -212,31 +226,35 @@ local hotstringTests = {
   {
     title = "case sensitivity",
     expansions = {
-      lower = "x",
-      UPPER = "X",
+      lower = { expansion = "x", matchcase = false, },
+      UPPER = "Y",
       collision = "lower",
       Collision = { expansion = "upper", casesensitive = true, },
     },
     cases = {
       {
         title = "lowercase",
-        input = "lower ",
-        expected = "x ",
+        input = "lower ", expected = "x ",
+      },
+      {
+        title = "lowercase typed upper still triggers",
+        input = "LOWER ", expected = "x ",
       },
       {
         title = "uppercase",
-        input = "UPPER ",
-        expected = "X ",
+        input = "UPPER ", expected = "Y ",
+      },
+      {
+        title = "uppercase typed lower is as specified",
+        input = "upper ", expected = "Y ",
       },
       {
         title = "case sensitive ones win",
-        input = "Collision ",
-        expected = "upper ",
+        input = "Collision ", expected = "upper ",
       },
       {
         title = "case insensitive trigger",
-        input = "coLLiSiON ",
-        expected = "lower ",
+        input = "coLLiSiON ", expected = "lower ",
       },
     },
   },
@@ -250,7 +268,7 @@ local hotstringTests = {
       name = { expansion = "Jefferson", matchcase = true },
       t = { expansion = "test", matchcase = true },
       v = { expansion = "test", matchcase = true },
-      V = { expansion = "TEST", casesensitive = true },
+      Y = { expansion = "YES", casesensitive = true },
       ["80b"] = { expansion = "test", matchcase = true }
     },
     cases = {
@@ -258,12 +276,16 @@ local hotstringTests = {
         input = "Hey. Btw, how are you?", expected = "Hey. By the way, how are you?" },
       { title = "all caps",
         input = "Hey. BTW, how are you?", expected = "Hey. BY THE WAY, how are you?" },
+      { title = "all lower",
+        input = "Hey. btw, how are you?", expected = "Hey. by the way, how are you?" },
       { title = "first and others caps",
         input = "Hey. BTw, how are you?", expected = "Hey. By the way, how are you?" },
       { title = "not first but others",
         input = "Hey. bTW, how are you?", expected = "Hey. by the way, how are you?" },
-      { title = "ignored b/c case sensitive",
+      { title = "case sensitive works",
         input = "CASESENSITIVE ", expected = "case sensitive " },
+      { title = "ignored when wrong case b/c case sensitive",
+        input = "CASESENSITIVe ", expected = "CASESENSITIVe " },
       { title = "first cap keys off first caseable",
         input = "8Ball ", expected = "Eight ball " },
       { title = "all caps works with first number",
@@ -284,8 +306,10 @@ local hotstringTests = {
         input = "80B ", expected = "Test " },
       { title = "one-character baseline",
         input = "v ", expected = "test " },
-      { title = "one-character all caps workaround",
-        input = "V ", expected = "TEST " },
+      { title = "one-character capitalized gives first-cap",
+        input = "V ", expected = "Test " },
+      { title = "work around one-character limits with case sensitivity",
+        input = "Y ", expected = "YES " },
     }
   },
   { title = "internals starting with end chars",
@@ -295,6 +319,10 @@ local hotstringTests = {
     cases = {
       { title = "expands at word boundaries",
         input = "/yd ", expected = "yard " },
+      { title = "expands in a word",
+        input = "5/yd ", expected = "5yard " },
+      { title = "expands after other end chars",
+        input = "5-/yd ", expected = "5-yard " },
     }
   },
   {
@@ -303,11 +331,13 @@ local hotstringTests = {
       ["/yd"] = { expansion = "yard", internal = true },
       ["yd"] = "yesterday",
       ["yard"] = { expansion = "longer", internal = true },
-      ["rd"] = { expansion = "shorter", internal = true },
+      ["ard"] = { expansion = "shorter", internal = true },
       ["yard1"] = { expansion = "longer", internal = true },
-      ["rd1"] = { expansion = "shorter", internal = true, priority = 1 },
+      ["ard1"] = { expansion = "shorter", internal = true, priority = 1, },
       ["word"] = { expansion = "inner", internal = true },
       ["Word"] = { expansion = "outer", internal = false },
+      ["word1"] = { expansion = "inner", internal = true, priority = 1, },
+      ["Word1"] = { expansion = "outer", internal = false },
       ["CS1"] = { expansion = "sensitive", internal = true, casesensitive = true, },
       ["cs1"] = { expansion = "insensitive", internal = true, casesensitive = false, },
       ["cs2"] = { expansion = "insensitive", priority = 1, internal = true, casesensitive = false, },
@@ -317,14 +347,16 @@ local hotstringTests = {
       { title = "longer abbreviation wins",
         input = "/yd ", expected = "yard " },
       { title = "longer abbreviation wins",
-        input = "backyard ", expected = "backlonger " },
-      { title = "shorter abbreviation wins when pri is specified",
-        input = "backyard1 ", expected = "backyashorter " },
-      { title = "word boundary ones win",
-        input = "word zword ", expected = "outer zinner " },
-      { title = "case sensitive wins",
-        input = "CS1 ", expected = "sensitive " },
-      { title = "higher priority wins",
+        input = "backyard backnard ", expected = "backlonger backnshorter " },
+      { title = "higher priority wins over longer",
+        input = "backyard1 ", expected = "backyshorter " },
+      { title = "word boundary wins over internal",
+        input = "word zword z-word ", expected = "outer zinner z-outer " },
+      { title = "higher priority wins over word boundary",
+        input = "word1 zword1 z-word1 ", expected = "inner zinner z-inner " },
+      { title = "case sensitive: case sensitive wins in a conflict",
+        input = "Cs1 CS1 ", expected = "Insensitive sensitive " },
+      { title = "higher priority wins over case sensitivity",
         input = "CS2 ", expected = "INSENSITIVE " }, -- case matching
     }
   },
@@ -365,17 +397,32 @@ local hotstringTests = {
   {
     title = "find suffixes",
     expansions = {
-      ["aaa"] = { expansion = "aaa", internal = false, },
-      ["aa"] = { expansion = "bbb", internal = true, },
-      ["a"] = { expansion = "ccc", internal = true, waitforcompletionkey = false, sendcompletionkey = false, },
+      ["aaa"] = { expansion = "3", internal = false, backspace = false, },
+      ["aa"] = { expansion = "2", internal = true, backspace = false, },
+      ["a"] = { expansion = "1", internal = true, backspace = false, waitforcompletionkey = false, sendcompletionkey = true, },
     },
     cases = {
-      { title = "triggers shorter embedded in a longer",
-        input = "a ", expected = "ccc " },
       { title = "triggers longer of the shorters",
-        input = "aa ", expected = "ccccbbb " },
+        input = "aa ", expected = "a1a12 " },
+      { title = "triggers longest when availabale",
+        input = "aaa ", expected = "a1a1a13 " },
       { title = "triggers after items that aren't in the tree at all",
-        input = "azzaa ", expected = "ccczzccccbbb " },
+        input = "azzaa ", expected = "a1zza1a12 " },
+    }
+  },
+  {
+    title = "incremental matches",
+    expansions = {
+      ["a"] = { expansion = "1", internal = true, backspace = false, waitforcompletionkey = false, sendcompletionkey = true, },
+      ["aa"] = { expansion = "2", internal = true, backspace = false, waitforcompletionkey = false, sendcompletionkey = true, },
+      ["aaa"] = { expansion = "3", internal = true, backspace = false, waitforcompletionkey = false, sendcompletionkey = true, },
+      ["aaaaa"] = { expansion = "5", internal = true, backspace = false, waitforcompletionkey = false, sendcompletionkey = true, },
+    },
+    cases = {
+      { title = "triggers longer of the shorters",
+        input = "aa ", expected = "a1a2 " },
+      { title = "triggers after items that aren't in the tree at all",
+        input = "azzaa zzaaaaa ", expected = "a1zza1a2 zza1a2a3a3a5 " },
     }
   },
   {
