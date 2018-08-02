@@ -1,12 +1,10 @@
--- TODO: Rename to TrieWalker
--- Use a provided DFA to manage state and report back any expansions that
--- are in the active state
+-- Walk a trie (decorated for Aho-Corasick), managing state transitions and things
 
-local Dfa = {}
-Dfa.__index = Dfa
+local TrieWalker = {}
+TrieWalker.__index = TrieWalker
 
-Dfa.WORDBOUNDARY_NODE = 1
-Dfa.INTERNAL_NODE = 2
+TrieWalker.WORDBOUNDARY_NODE = 1
+TrieWalker.INTERNAL_NODE = 2
 
 local function script_path()
   local str = debug.getinfo(2, "S").source:sub(2)
@@ -17,28 +15,28 @@ local spoonPath = script_path()
 local circularbuffer = dofile(spoonPath.."/circularbuffer.lua")
 local Trie = dofile(spoonPath.."/trie.lua")
 
-function Dfa:getMatchingExpansion()
+function TrieWalker:getMatchingExpansion()
   -- return the expansion at the current node
   -- the aggregation function in the trie has already checked suffixes
   return self.state.expansion
 end
 
-function Dfa:reset()
+function TrieWalker:reset()
   self.states:clear()
   self:selectstate(self.trie)
 end
 
-function Dfa:rewindstate()
+function TrieWalker:rewindstate()
   self.states:pop()
   self.state = self.states:getHead() or self.trie
 end
 
-function Dfa:selectstate(state)
+function TrieWalker:selectstate(state)
   self.state = state
   self.states:push(state)
 end
 
-function Dfa:followedge(charcode)
+function TrieWalker:followedge(charcode)
   if self.isCompletion then -- reset after completions
     self.isCompletion = false
     self:selectstate(self.trie)
@@ -81,7 +79,7 @@ function Dfa:followedge(charcode)
   self:selectstate(nextstate)
 end
 
-function Dfa.new(trie, homogenizecase, isEndChar, maxStatesUndo, debug)
+function TrieWalker.new(trie, homogenizecase, isEndChar, maxStatesUndo, debug)
   assert(trie, "Must provide trie")
   assert(type(isEndChar) == "function", "Must pass in a function to identify end characters")
   assert(maxStatesUndo, "Must pass in a number of states to save")
@@ -94,9 +92,9 @@ function Dfa.new(trie, homogenizecase, isEndChar, maxStatesUndo, debug)
     states = circularbuffer.new(maxStatesUndo),
     isCompletion = false, -- variable to hold state: when we've completed, we stay in the completion state, but the next move goes from the word boundary root
   }
-  self = setmetatable(self, Dfa)
+  self = setmetatable(self, TrieWalker)
   self:reset()
   return self
 end
 
-return Dfa
+return TrieWalker

@@ -8,7 +8,7 @@ end
 local spoonPath = script_path()
 
 local Trie = dofile(spoonPath.."/trie.lua")
-local Dfa = dofile(spoonPath.."/dfa.lua")
+local TrieWalker = dofile(spoonPath.."/triewalker.lua")
 
 StateManager.CASE_INSENSITIVE_GROUP = 2
 
@@ -22,7 +22,7 @@ end
 
 function StateManager.new(expansions, isEndChar, maxStatesUndo, debug)
   local self = {
-    dfas = {}, -- a group of DFAs to coordinate
+    walkers = {}, -- a group of walkers to manage state
   }
   self = setmetatable(self, StateManager)
 
@@ -37,37 +37,37 @@ function StateManager.new(expansions, isEndChar, maxStatesUndo, debug)
   for k,expansions in pairs(expansiongroups) do
     local homogenizecase = (k == StateManager.CASE_INSENSITIVE_GROUP)
     local trie = Trie.createtrie(expansions, homogenizecase, isEndChar, debug)
-    local dfa = Dfa.new(trie, homogenizecase, isEndChar, maxStatesUndo, debug)
-    self.dfas[#self.dfas+1] = dfa
+    local trieWalker = TrieWalker.new(trie, homogenizecase, isEndChar, maxStatesUndo, debug)
+    self.walkers[#self.walkers+1] = trieWalker
   end
   return self
 end
 
 function StateManager:getMatchingExpansion()
   local best
-  for i=1,#self.dfas do
-    local dfa = self.dfas[i]
-    local x = dfa:getMatchingExpansion()
+  for i=1,#self.walkers do
+    local trieWalker = self.walkers[i]
+    local x = trieWalker:getMatchingExpansion()
     if x and x:takesPriorityOver(best) then best = x end
   end
   return best
 end
 
 function StateManager:reset()
-  for i=1,#self.dfas do
-    self.dfas[i]:reset()
+  for i=1,#self.walkers do
+    self.walkers[i]:reset()
   end
 end
 
 function StateManager:rewindstate()
-  for i=1,#self.dfas do
-    self.dfas[i]:rewindstate()
+  for i=1,#self.walkers do
+    self.walkers[i]:rewindstate()
   end
 end
 
 function StateManager:followedge(charcode)
-  for i=1,#self.dfas do
-    self.dfas[i]:followedge(charcode)
+  for i=1,#self.walkers do
+    self.walkers[i]:followedge(charcode)
   end
 end
 
