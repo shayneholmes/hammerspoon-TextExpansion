@@ -12,22 +12,13 @@ local function script_path()
 end
 local spoonPath = script_path()
 
-local makeCounter = dofile(spoonPath.."/counter.lua") -- TODO: Remove
 local List = dofile(spoonPath.."/list.lua")
 
--- create an empty trie, using the same counter as its parent, if any
+-- create an empty trie node
 function Trie:new()
-  local counter -- counter so nodes have unique values
-  if self then
-    counter = self.getnextvalue
-  else
-    counter = makeCounter()
-  end
   local new = {
-    value = counter(),
     transitions = {},
     expansions = nil,
-    getnextvalue = counter,
   }
   new = setmetatable(new, Trie)
   return new
