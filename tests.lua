@@ -462,6 +462,20 @@ local hotstringTests = {
         input = "aaa ", expected = " " },
     }
   },
+  {
+    title = "word boundaries",
+    expansions = {
+      [":emoji:"] = { expansion = ":)", internal = true, },
+      ["input"] = "OUTPUT",
+      ["end:"] = { expansion = "colon", waitforcompletionkey = false, backspace = false, },
+    },
+    cases = {
+      { title = "can end a word with an endchar symbol that starts an internal abbreviation",
+        input = "input:this", expected = "OUTPUT:this" },
+      { title = "word completion followed by internal with the same end char",
+        input = "end:emoji: ", expected = "end:colo:) " },
+    }
+  },
 }
 
 local testDeferredAction

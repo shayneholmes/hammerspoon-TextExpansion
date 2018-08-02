@@ -15,7 +15,7 @@ local Trie = dofile(spoonPath.."/trie.lua")
 function TrieWalker:getMatchingExpansion()
   -- return the expansion at the current node
   -- the aggregation function in the trie has already checked suffixes
-  return self.state.expansion
+  return self.expansion
 end
 
 function TrieWalker:reset()
@@ -34,10 +34,7 @@ function TrieWalker:selectstate(state)
 end
 
 function TrieWalker:followedge(charcode)
-  if self.isCompletion then -- reset after completions
-    self.isCompletion = false
-    self:selectstate(self.trie)
-  end
+  local isEndChar = self.isEndChar(charcode) -- save for later
   local str = utf8.char(charcode)
   if self.homogenizecase then
     str = str:lower()
@@ -53,26 +50,28 @@ function TrieWalker:followedge(charcode)
   end
   if node.transitions[charcode] then -- exact match
     nextstate = node.transitions[charcode]
-  else -- no match possible, so node points to the no-state node
-    if self.isEndChar(charcode) then
-      -- this end char might complete an abbreviation, and starts a new one either way
-      -- first, check current state and suffixes for completions that we should trigger
-      local cur = self.state
-      while cur and not cur.transitions[Trie.COMPLETION] do
-        cur = cur.suffix
-      end
-      if cur then -- there is a completion; go to word boundary state, but after this
-        nextstate = cur.transitions[Trie.COMPLETION]
-        self.isCompletion = true
-      else
-        nextstate = self.trie -- no completion; reset to word boundary now
-      end
+  else -- no exact match, fail to the appropriate state
+    if isEndChar then
+      nextstate = self.trie -- reset to word boundary
     else
-      nextstate = node -- no-state node, so we can trigger internals
+      nextstate = node -- to the no-state, so we can trigger internals
+    end
+  end
+  local expansionstate = nextstate
+  if isEndChar then
+    -- this end char might complete an abbreviation; check current state and suffixes for completions that we should trigger
+    local cur = self.state
+    while cur and not cur.transitions[Trie.COMPLETION] do
+      cur = cur.suffix
+    end
+    if cur then -- there is a completion
+      expansionstate = cur.transitions[Trie.COMPLETION]
     end
   end
 
   if self.debug then print(( "%s -> %s -> %s" ):format(self.state.address, str, nextstate.address)) end
+  if self.debug and expansionstate.expansion then print(( "(expand %s to %s)" ):format(expansionstate.address, expansionstate.expansion)) end
+  self.expansion = expansionstate.expansion
   self:selectstate(nextstate)
 end
 
@@ -87,7 +86,6 @@ function TrieWalker.new(trie, homogenizecase, isEndChar, maxStatesUndo, debug)
     isEndChar = isEndChar,
     state = nil, -- set this in in reset
     states = circularbuffer.new(maxStatesUndo),
-    isCompletion = false, -- variable to hold state: when we've completed, we stay in the completion state, but the next move goes from the word boundary root
   }
   self = setmetatable(self, TrieWalker)
   self:reset()
