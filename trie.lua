@@ -1,4 +1,4 @@
--- Create a set of tries to represent abbreviations
+-- Create a trie to hold expansions, indexed by their abbreviations
 
 local Trie = {}
 Trie.__index = Trie
