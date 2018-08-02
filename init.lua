@@ -43,7 +43,7 @@ obj.license = "MIT - https://opensource.org/licenses/MIT"
 --- * **`backspace`** (default true): Use backspaces to remove the abbreviation when it is expanded.
 --- * **`casesensitive`** (default false): Case of abbreviation must match exactly
 --- * **`internal`** (default false): Trigger the expansion even when the abbreviation is inside another word
---- * **`matchcase`** (default true): If you type an abbreviation in `ALL CAPS` or `FirstCaps`, the expansion will be typed in the same manner; ignored when `casesensitive` is set
+--- * **`matchcase`** (default true): If you type an abbreviation in `ALL CAPS` or `First caps`, the expansion will be typed in the same manner; ignored when `casesensitive` is set
 --- * **`priority`** (default 0): A number that specifies which of two expansions to use in case of collision. Expansions with higher numbers will be preferred.
 --- * **`resetrecognizer`** (default false): When an abbreviation is completed, reset the recognizer.
 --- * **`sendcompletionkey`** (default true): When an abbreviation is completed, send the completion key along with it.
