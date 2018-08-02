@@ -5,8 +5,9 @@
 local Trie = {}
 Trie.__index = Trie
 
-Trie.COMPLETION = "_completion"
-Trie.WORDBOUNDARY = "_wordboundary"
+-- using numbers to mark these makes them slightly faster, and doesn't collide with UTF8 since these are control characters
+Trie.COMPLETION = 1
+Trie.WORDBOUNDARY = 2
 
 local function script_path()
   local str = debug.getinfo(2, "S").source:sub(2)
