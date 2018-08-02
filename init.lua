@@ -117,13 +117,6 @@ local statemanager -- generated on start()
 local pendingTimer
 local timeoutSeconds
 
-local function merge_tables(default, override)
-  local combined = {}
-  for k,v in pairs(default) do combined[k] = v end
-  for k,v in pairs(override) do combined[k] = v end
-  return combined
-end
-
 local function generateKeyActions(self)
   keyActions = {}
   for action,keyTable in pairs(self.specialKeys) do
