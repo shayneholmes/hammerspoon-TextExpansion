@@ -37,17 +37,17 @@ function Trie:addentry(keys, value)
   cur.expansions[#cur.expansions + 1] = value
 end
 
-function Trie.print_helper(trie, depth)
-  if trie == nil then
+function Trie:print_helper(depth)
+  if self == nil then
     return
   end
   local preface = string.rep("-", depth)
-  for _, val in pairs(trie.expansions or {trie.expansion}) do
+  for _, val in pairs(self.expansions or {self.expansion}) do
     local out = val
     if type(out) == "table" then out = out.expansion end
     print(("%sEXPANSION: %s"):format(preface,out))
   end
-  for key, val in pairs(trie.transitions or {}) do
+  for key, val in pairs(self.transitions or {}) do
     local label = key
     if type(label) == "number" then
       label = utf8.char(label)
