@@ -1,4 +1,6 @@
 -- Create a trie to hold expansions, indexed by their abbreviations
+--
+-- One wrinkle is in the root node: We build the trie starting from an "empty state" root, which has children for internals and a special "word boundary" child, where abbreviations that require word boundaries live. However, when we return the trie, we return it with the "word boundary" node as the root. It's still connected to the empty state node by suffix links, but the consumers of the trie will reset to the word boundary node after end characters, and only go to the empty state when nothing matches. It just makes the consumer code cleaner.
 
 local Trie = {}
 Trie.__index = Trie
