@@ -492,13 +492,13 @@ local function testResolveDeferred()
 end
 
 local testMocked
-local function setMocks()
+local function setMocks(debug)
   assert(not testMocked, "Can't setup tests twice!")
   testMocked = {
     hs = hs,
     print = print,
   }
-  print = function() end
+  if not debug then print = function() end end
   hs = {
     eventtap = {
       keyStrokes = function(str) -- add strokes to output
@@ -537,9 +537,10 @@ local function unsetMocks()
   testMocked = nil
 end
 
-local function getTextExpansion()
-  setMocks()
+local function getTextExpansion(debug)
+  setMocks(debug)
   local te = require('init')
+  te:setDebug(true)
   te.timeoutSeconds = 0 -- disable timeout doAfters
   return te
 end
@@ -579,11 +580,11 @@ local function testRun(te, testname, input, expected, repeatlength)
     ("%s (input \"%s\"): Expected: \"%s\", actual: \"%s\""):format(testname, input, expected, testOutput))
 end
 
-local function runApiTests()
+local function runApiTests(debug)
   local failed = {}
   testprint("Running API tests...")
   for i=1,#apiTests do
-    local te = getTextExpansion()
+    local te = getTextExpansion(debug)
     local case = apiTests[i]
     local caseTitle = case.title or "anonymous"
     local func = case.func or function() end
@@ -602,10 +603,10 @@ local function runApiTests()
   return failed
 end
 
-local function runHotstringTests(te)
+local function runHotstringTests(debug)
   local failed = {}
   testprint("Running hostring tests...")
-  local te = getTextExpansion()
+  local te = getTextExpansion(debug)
   te:init()
   for i=1,#hotstringTests do
     local setting = hotstringTests[i]
@@ -631,10 +632,10 @@ local function runHotstringTests(te)
   return failed
 end
 
-function obj.runtests()
+function obj.runtests(debug)
   local failed = {}
-  failed = concatTables(failed, runApiTests())
-  failed = concatTables(failed, runHotstringTests())
+  failed = concatTables(failed, runApiTests(debug))
+  failed = concatTables(failed, runHotstringTests(debug))
   testprint("Tests complete.")
   if #failed > 0 then
     testprint(("%d failed."):format(#failed))
