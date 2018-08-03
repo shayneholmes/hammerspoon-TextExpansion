@@ -27,19 +27,17 @@ function TrieWalker:selectstate(state)
   self.states:push(state)
 end
 
-function TrieWalker:followedge(charcode)
-  -- analyze and maybe homogenize the character
-  local isEndChar = self.isEndChar(charcode) -- save for later
-  local str = utf8.char(charcode)
-  if self.homogenizecase then
-    str = str:lower()
-    for p,c in utf8.codes(str) do
-      charcode = c
-    end
+local function toLower(charcode)
+  local str = utf8.char(charcode):lower()
+  for p,c in utf8.codes(str) do
+    charcode = c
   end
-  -- find the next state
-  local nextstate = nil -- this will be set to the next state
-  local node = self.state
+  return charcode
+end
+
+local function nextstate(state, charcode, isEndChar)
+  local nextstate = nil
+  local node = state
   while node.suffix and not node.transitions[charcode] do
     node = node.suffix
   end
@@ -47,25 +45,40 @@ function TrieWalker:followedge(charcode)
     nextstate = node.transitions[charcode]
   else -- no exact match, fail to the appropriate state
     if isEndChar then
-      nextstate = self.trie -- reset to word boundary
+      nextstate = node.transitions[Trie.WORDBOUNDARY] -- reset to word boundary
     else
       nextstate = node -- to the no-state, so we can trigger internals
     end
   end
+  return nextstate
+end
+
+-- looks for completions in node and its suffixes
+local function getcompletion(node)
+  local cur = node
+  while cur and not cur.transitions[Trie.COMPLETION] do
+    cur = cur.suffix
+  end
+  if cur then -- there is a completion
+    return cur.transitions[Trie.COMPLETION]
+  end
+end
+
+function TrieWalker:followedge(charcode)
+  -- analyze and maybe homogenize the character
+  local isEndChar = self.isEndChar(charcode) -- save for later
+  if self.homogenizecase then
+    charcode = toLower(charcode)
+  end
+  -- find the next state
+  local nextstate = nextstate(self.state, charcode, isEndChar)
   -- compute the expansion; it's usually whatever's at the next state, but may not be if the char is an end char
   local expansionstate = nextstate
   if isEndChar then
-    -- this end char might have completed an abbreviation; check current state and suffixes for completions that we should trigger
-    local cur = self.state
-    while cur and not cur.transitions[Trie.COMPLETION] do
-      cur = cur.suffix
-    end
-    if cur then -- there is a completion
-      expansionstate = cur.transitions[Trie.COMPLETION]
-    end
+    expansionstate = getcompletion(self.state) or expansionstate
   end
   -- change states and return the expansion (which may be nil)
-  if self.debug then print(( "%s -> %s -> %s" ):format(self.state.address, str, nextstate.address)) end
+  if self.debug then print(( "%s -> %s -> %s" ):format(self.state.address, utf8.char(charcode), nextstate.address)) end
   if self.debug and expansionstate.expansion then print(( "(expand %s to %s)" ):format(expansionstate.address, expansionstate.expansion)) end
   self:selectstate(nextstate)
   return expansionstate.expansion
@@ -82,6 +95,7 @@ function TrieWalker.new(trie, homogenizecase, isEndChar, maxStatesUndo, debug)
     isEndChar = isEndChar,
     state = nil, -- set this in in reset
     states = circularbuffer.new(maxStatesUndo),
+    isCompletion = false, -- variable to hold state: when we've completed, we stay in the completion state, but the next move goes from the word boundary root
   }
   self = setmetatable(self, TrieWalker)
   self:reset()
