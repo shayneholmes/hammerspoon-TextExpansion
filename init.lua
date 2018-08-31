@@ -390,6 +390,10 @@ end
 --- })
 --- ```
 function obj:setExpansions(expansions)
+  if keywatcher and keyWatcher:isEnabled() then
+    print("Warning: watcher is already running! Stopping...")
+    keyWatcher:stop()
+  end
   local xs = generateExpansions(self, expansions)
   statemanager = StateManager.new(xs, isEndChar, maxStatesUndo, debug)
   resetAbbreviation()
@@ -402,6 +406,10 @@ end
 ---
 --- You must make any changes to `TextExpansion.specialKeys` before this method is called; any further changes to it won't take effect until `init` is called again.
 function obj:init()
+  if keywatcher and keyWatcher:isEnabled() then
+    print("Warning: watcher is already running! Stopping...")
+    keyWatcher:stop()
+  end
   generateKeyActions(self)
   timeoutSeconds = self.timeoutSeconds
   buffer = circularbuffer.new(maxAbbreviationLength)
