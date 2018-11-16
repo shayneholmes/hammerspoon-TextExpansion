@@ -45,7 +45,7 @@ obj.license = "MIT - https://opensource.org/licenses/MIT"
 --- * **`internal`** (default false): Trigger the expansion even when the abbreviation is inside another word
 --- * **`matchcase`** (default true): If you type an abbreviation in `ALL CAPS` or `First caps`, the expansion will be typed in the same manner; ignored when `casesensitive` is set
 --- * **`priority`** (default 0): A number that specifies which of two expansions to use in case of collision. Expansions with higher numbers will be preferred.
---- * **`resetrecognizer`** (default false): When an abbreviation is completed, reset the recognizer.
+--- * **`resetrecognizer`** (default true): When an abbreviation is completed, reset the recognizer.
 --- * **`sendcompletionkey`** (default true): When an abbreviation is completed, send the completion key along with it.
 --- * **`waitforcompletionkey`** (default true): Wait for a completion key before expanding the abbreviation.
 obj.defaults = {
@@ -54,7 +54,7 @@ obj.defaults = {
   internal = false, -- trigger even inside another word
   matchcase = true, -- if you type an abbreviation in `ALL CAPS` or `FirstCaps`, the expansion will be typed in the same manner; ignored when `casesensitive` is set
   priority = 0, -- explicit override for priority between conflicting abbreviations
-  resetrecognizer = false, -- reset the recognizer after each completion
+  resetrecognizer = true, -- reset the recognizer after each completion
   sendcompletionkey = true, -- send the completion key
   waitforcompletionkey = true, -- wait for a completion key
   expansion = nil, -- not in default, must be defined

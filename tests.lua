@@ -412,9 +412,9 @@ local hotstringTests = {
   {
     title = "find suffixes",
     expansions = {
-      ["aaa"] = { expansion = "3", internal = false, backspace = false, },
-      ["aa"] = { expansion = "2", internal = true, backspace = false, },
-      ["a"] = { expansion = "1", internal = true, backspace = false, waitforcompletionkey = false, sendcompletionkey = true, },
+      ["aaa"] = { expansion = "3", internal = false, backspace = false, resetrecognizer = false },
+      ["aa"] = { expansion = "2", internal = true, backspace = false, resetrecognizer = false },
+      ["a"] = { expansion = "1", internal = true, backspace = false, resetrecognizer = false, waitforcompletionkey = false, sendcompletionkey = true, },
     },
     cases = {
       { title = "triggers longer of the shorters",
@@ -428,10 +428,10 @@ local hotstringTests = {
   {
     title = "incremental matches",
     expansions = {
-      ["a"] = { expansion = "1", internal = true, backspace = false, waitforcompletionkey = false, sendcompletionkey = true, },
-      ["aa"] = { expansion = "2", internal = true, backspace = false, waitforcompletionkey = false, sendcompletionkey = true, },
-      ["aaa"] = { expansion = "3", internal = true, backspace = false, waitforcompletionkey = false, sendcompletionkey = true, },
-      ["aaaaa"] = { expansion = "5", internal = true, backspace = false, waitforcompletionkey = false, sendcompletionkey = true, },
+      ["a"] = { expansion = "1", internal = true, backspace = false, resetrecognizer = false, waitforcompletionkey = false, sendcompletionkey = true, },
+      ["aa"] = { expansion = "2", internal = true, backspace = false, resetrecognizer = false, waitforcompletionkey = false, sendcompletionkey = true, },
+      ["aaa"] = { expansion = "3", internal = true, backspace = false, resetrecognizer = false, waitforcompletionkey = false, sendcompletionkey = true, },
+      ["aaaaa"] = { expansion = "5", internal = true, backspace = false, resetrecognizer = false, waitforcompletionkey = false, sendcompletionkey = true, },
     },
     cases = {
       { title = "triggers longer of the shorters",
@@ -443,7 +443,7 @@ local hotstringTests = {
   {
     title = "consecutive expansions",
     expansions = {
-    ["aaa"] = { expansion = "bbb", internal = true, waitforcompletionkey = false, sendcompletionkey = false },
+    ["aaa"] = { expansion = "bbb", internal = true, resetrecognizer = false, waitforcompletionkey = false, sendcompletionkey = false },
     },
     cases = {
       { title = "just one",
@@ -467,7 +467,7 @@ local hotstringTests = {
     expansions = {
       [":emoji:"] = { expansion = ":)", internal = true, },
       ["input"] = "OUTPUT",
-      ["end:"] = { expansion = "colon", waitforcompletionkey = false, backspace = false, },
+      ["end:"] = { expansion = "colon", resetrecognizer = false, waitforcompletionkey = false, backspace = false, },
     },
     cases = {
       { title = "can end a word with an endchar symbol that starts an internal abbreviation",
