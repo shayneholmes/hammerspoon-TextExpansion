@@ -262,28 +262,30 @@ end
 local CASE_NONE = 0
 local CASE_ALL_CAPS = 1
 local CASE_FIRST_CAP = 2
-local function getcase(str)
-  local upper = str:upper()
-  local lower = str:lower()
-  local caseables = 0
-  local firstupper = false
-  local anylower = false
-  for i=1,#str do
-    local upper = upper:sub(i,i)
-    if upper ~= lower:sub(i,i) then
-      caseables = caseables + 1
-      local isupper = upper == str:sub(i,i)
-      if caseables == 1 then
-        firstupper = isupper
+local function getCase(triggerString)
+  local upper = triggerString:upper()
+  local lower = triggerString:lower()
+  local charsWithCase = 0 -- Number of characters that can be cased
+  local firstUpper = false
+  local anyLower = false
+  for i=1,#triggerString do
+    local upperChar = upper:sub(i,i)
+    local lowerChar = lower:sub(i,i)
+    if upperChar ~= lowerChar then
+      local origChar = triggerString:sub(i,i)
+      charsWithCase = charsWithCase + 1
+      local isUpper = (origChar == upperChar)
+      if charsWithCase == 1 then
+        firstUpper = isUpper
       end
-      if not isupper then
-        anylower = true
+      if not isUpper then
+        anyLower = true
         break
       end
     end
   end
-  if firstupper then
-    if caseables > 1 and not anylower then
+  if firstUpper then
+    if charsWithCase > 1 and not anyLower then
       return CASE_ALL_CAPS
     else
       return CASE_FIRST_CAP
@@ -293,17 +295,17 @@ local function getcase(str)
   end
 end
 
-local function makeallcaps(str)
-  return str:upper()
+local function makeallcaps(expansionString)
+  return expansionString:upper()
 end
 
-local function makefirstcap(str)
-  return str:sub(1,1):upper() .. str:sub(2)
+local function makefirstcap(expansionString)
+  return expansionString:sub(1,1):upper() .. expansionString:sub(2)
 end
 
 -- modify output depending on trigger
 local function matchcase(trigger, output)
-  local case = getcase(trigger)
+  local case = getCase(trigger)
   if case == CASE_ALL_CAPS then
     return makeallcaps(output)
   elseif case == CASE_FIRST_CAP then
