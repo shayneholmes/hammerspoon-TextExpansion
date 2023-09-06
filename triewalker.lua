@@ -95,7 +95,6 @@ function TrieWalker.new(trie, homogenizecase, isEndChar, maxStatesUndo, debug)
     isEndChar = isEndChar,
     state = nil, -- set this in in reset
     states = circularbuffer.new(maxStatesUndo),
-    isCompletion = false, -- variable to hold state: when we've completed, we stay in the completion state, but the next move goes from the word boundary root
   }
   self = setmetatable(self, TrieWalker)
   self:reset()
