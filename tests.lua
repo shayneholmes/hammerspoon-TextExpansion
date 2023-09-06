@@ -682,7 +682,7 @@ function obj.testPerformance()
       local initStart = os.clock()
       te:setExpansions(testExpansions)
       local initEnd = os.clock()
-      print(("init, %d, %f"):format(
+      testprint(("init, %d, %f"):format(
         testExpansionsSize,
         initEnd - initStart
       ))
@@ -693,9 +693,9 @@ function obj.testPerformance()
       for _=1,attempts do
         collectgarbage()
         local inputStart = os.clock()
-        testRun(te, testInput, nil, testInputSize)
+        testRun(te, "performance", testInput, nil, testInputSize)
         local inputEnd = os.clock()
-        print(("input, %d, %d, %f"):format(
+        testprint(("input, %d, %d, %f"):format(
           testExpansionsSize,
           testInputSize,
           inputEnd - inputStart

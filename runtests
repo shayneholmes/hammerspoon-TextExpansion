@@ -5,7 +5,7 @@ for k,v in pairs(_G) do orig_globs[k] = 1 end
 local tests = require('tests')
 local debug = false
 local failures = tests.runtests(debug)
--- tests.testPerformance()
+tests.testPerformance()
 for k,v in pairs(_G) do if not orig_globs[k] then failures[#failures + 1] = true; print(("Leaked variable! %s"):format(k)) end end
 if #failures > 0 then
   os.exit(1) -- signal failure
